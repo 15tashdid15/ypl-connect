@@ -1,3 +1,9 @@
+import { Prisma } from "@/app/generated/prisma/client";
+import { getJobBySlug } from "@/data/jobs";
+import prisma from "@/lib/prisma";
+
+export const runtime = "nodejs";
+
 const MAX_CV_SIZE = 5 * 1024 * 1024;
 
 const allowedCvTypes = new Set([
@@ -7,6 +13,16 @@ const allowedCvTypes = new Set([
 ]);
 
 const allowedCvExtensions = [".pdf", ".doc", ".docx"];
+
+class DuplicateApplicationError extends Error {
+    referenceId: string;
+
+    constructor(referenceId: string) {
+        super("This candidate has already applied for this job.");
+        this.name = "DuplicateApplicationError";
+        this.referenceId = referenceId;
+    }
+}
 
 function getText(formData: FormData, key: string) {
     const value = formData.get(key);
@@ -22,6 +38,15 @@ function hasAllowedExtension(filename: string) {
     );
 }
 
+function createApplicationReference() {
+    const referenceCode = crypto
+        .randomUUID()
+        .split("-")[0]
+        .toUpperCase();
+
+    return `YPL-${new Date().getFullYear()}-${referenceCode}`;
+}
+
 export async function POST(request: Request) {
     try {
         const formData = await request.formData();
@@ -29,15 +54,20 @@ export async function POST(request: Request) {
         const honeypot = getText(formData, "website");
 
         if (honeypot) {
-            return Response.json({
-                message: "Application received.",
-            });
+            return Response.json(
+                {
+                    message: "Application received.",
+                },
+                {
+                    status: 201,
+                },
+            );
         }
 
         const jobSlug = getText(formData, "jobSlug");
-        const jobTitle = getText(formData, "jobTitle");
+        const submittedJobTitle = getText(formData, "jobTitle");
         const fullName = getText(formData, "fullName");
-        const email = getText(formData, "email");
+        const email = getText(formData, "email").toLowerCase();
         const phone = getText(formData, "phone");
         const location = getText(formData, "location");
         const currentCompany = getText(formData, "currentCompany");
@@ -50,9 +80,15 @@ export async function POST(request: Request) {
         const cv = cvValue instanceof File ? cvValue : null;
 
         const errors: string[] = [];
+        const job = getJobBySlug(jobSlug);
 
-        if (!jobSlug || !jobTitle) {
-            errors.push("The selected job is missing.");
+        if (!job) {
+            errors.push("The selected job could not be found.");
+        } else if (
+            submittedJobTitle &&
+            submittedJobTitle !== job.title
+        ) {
+            errors.push("The selected job information is invalid.");
         }
 
         if (fullName.length < 2 || fullName.length > 100) {
@@ -109,7 +145,7 @@ export async function POST(request: Request) {
             }
         }
 
-        if (errors.length > 0) {
+        if (errors.length > 0 || !job || !cv) {
             return Response.json(
                 {
                     message: "Please correct the application form.",
@@ -121,28 +157,64 @@ export async function POST(request: Request) {
             );
         }
 
-        const referenceCode = crypto
-            .randomUUID()
-            .split("-")[0]
-            .toUpperCase();
+        const referenceId = createApplicationReference();
 
-        const applicationId = `YPL-${new Date().getFullYear()}-${referenceCode}`;
+        const existingCandidate = await prisma.candidate.findUnique({
+            where: {
+                email,
+            },
+            select: {
+                applications: {
+                    where: {
+                        jobSlug: job.slug,
+                    },
+                    select: {
+                        referenceId: true,
+                    },
+                    take: 1,
+                },
+            },
+        });
 
-        /*
-          PostgreSQL insertion and private CV storage will be added
-          in the next development stage.
-    
-          Do not log candidate personal information or CV contents here.
-        */
+        const existingApplication =
+            existingCandidate?.applications[0];
 
-        return Response.json(
-            {
-                message:
-                    "Your application passed validation and was received successfully.",
-                applicationId,
-                application: {
-                    jobSlug,
-                    jobTitle,
+        if (existingApplication) {
+            throw new DuplicateApplicationError(
+                existingApplication.referenceId,
+            );
+        }
+
+        const applicationData = {
+            referenceId,
+            jobSlug: job.slug,
+            jobTitle: job.title,
+            coverLetter: coverLetter || null,
+            cvOriginalName: cv.name,
+            cvMimeType:
+                cv.type || "application/octet-stream",
+            cvSize: cv.size,
+            cvStorageKey: null,
+            consentAt: new Date(),
+        };
+
+        const candidateWithApplication =
+            await prisma.candidate.upsert({
+                where: {
+                    email,
+                },
+                update: {
+                    fullName,
+                    phone,
+                    location,
+                    currentCompany: currentCompany || null,
+                    experience,
+                    portfolioUrl: portfolioUrl || null,
+                    applications: {
+                        create: applicationData,
+                    },
+                },
+                create: {
                     fullName,
                     email,
                     phone,
@@ -150,20 +222,97 @@ export async function POST(request: Request) {
                     currentCompany: currentCompany || null,
                     experience,
                     portfolioUrl: portfolioUrl || null,
-                    hasCoverLetter: coverLetter.length > 0,
-                    cvFilename: cv?.name,
-                    cvSize: cv?.size,
+                    applications: {
+                        create: applicationData,
+                    },
                 },
+                select: {
+                    applications: {
+                        where: {
+                            referenceId,
+                        },
+                        select: {
+                            referenceId: true,
+                            status: true,
+                            createdAt: true,
+                        },
+                        take: 1,
+                    },
+                },
+            });
+
+        const application =
+            candidateWithApplication.applications[0];
+
+        if (!application) {
+            throw new Error(
+                "Application was not returned after creation.",
+            );
+        }
+        return Response.json(
+            {
+                message: "Your application was submitted successfully.",
+                applicationId: application.referenceId,
+                status: application.status,
+                submittedAt: application.createdAt,
             },
             {
                 status: 201,
             },
         );
-    } catch {
+    } catch (error) {
+        if (error instanceof DuplicateApplicationError) {
+            return Response.json(
+                {
+                    message: "You have already applied for this position.",
+                    applicationId: error.referenceId,
+                },
+                {
+                    status: 409,
+                },
+            );
+        }
+
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            console.error("Prisma application error:", {
+                code: error.code,
+                meta: error.meta,
+            });
+
+            if (error.code === "P2002") {
+                return Response.json(
+                    {
+                        message:
+                            "A database uniqueness rule prevented this application. Check the candidate and application constraints.",
+                    },
+                    {
+                        status: 409,
+                    },
+                );
+            }
+
+            return Response.json(
+                {
+                    message: `The database rejected the application (${error.code}).`,
+                },
+                {
+                    status: 500,
+                },
+            );
+        }
+
+        console.error("Unexpected application error:", {
+            name: error instanceof Error ? error.name : "UnknownError",
+            message:
+                error instanceof Error
+                    ? error.message
+                    : "Unknown application error",
+        });
+
         return Response.json(
             {
                 message:
-                    "The server could not process the application. Please try again.",
+                    "The server could not save the application. Check the development terminal for the error code.",
             },
             {
                 status: 500,
