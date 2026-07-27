@@ -84,15 +84,22 @@ export default function Home() {
           </Link>
 
           <nav className="hidden items-center gap-8 text-sm font-medium text-slate-600 md:flex">
+            <Link href="/jobs" className="transition hover:text-[#0b2d5c]">
+              Jobs
+            </Link>
+
             <a href="#services" className="transition hover:text-[#0b2d5c]">
               Services
             </a>
+
             <a href="#platform" className="transition hover:text-[#0b2d5c]">
               Platform
             </a>
+
             <a href="#workflow" className="transition hover:text-[#0b2d5c]">
               Workflow
             </a>
+
             <a href="#contact" className="transition hover:text-[#0b2d5c]">
               Contact
             </a>
@@ -127,12 +134,12 @@ export default function Home() {
             </p>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <a
-                href="#services"
+              <Link
+                href="/jobs"
                 className="rounded-xl bg-[#f5b400] px-6 py-3.5 text-center text-sm font-bold text-[#071f43] transition hover:bg-[#ffc72c]"
               >
-                Explore our services
-              </a>
+                Explore current jobs
+              </Link>
 
               <a
                 href="#workflow"
