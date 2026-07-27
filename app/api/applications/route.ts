@@ -1,18 +1,17 @@
 import { Prisma } from "@/app/generated/prisma/client";
 import { getJobBySlug } from "@/data/jobs";
+import {
+    isValidCvStorageKey,
+    MAX_CV_SIZE,
+    resolveCvContentType,
+} from "@/lib/cv";
 import prisma from "@/lib/prisma";
+import {
+    deleteCvObject,
+    getCvObjectMetadata,
+} from "@/lib/r2";
 
 export const runtime = "nodejs";
-
-const MAX_CV_SIZE = 5 * 1024 * 1024;
-
-const allowedCvTypes = new Set([
-    "application/pdf",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-]);
-
-const allowedCvExtensions = [".pdf", ".doc", ".docx"];
 
 class DuplicateApplicationError extends Error {
     referenceId: string;
@@ -30,14 +29,6 @@ function getText(formData: FormData, key: string) {
     return typeof value === "string" ? value.trim() : "";
 }
 
-function hasAllowedExtension(filename: string) {
-    const normalizedFilename = filename.toLowerCase();
-
-    return allowedCvExtensions.some((extension) =>
-        normalizedFilename.endsWith(extension),
-    );
-}
-
 function createApplicationReference() {
     const referenceCode = crypto
         .randomUUID()
@@ -47,7 +38,32 @@ function createApplicationReference() {
     return `YPL-${new Date().getFullYear()}-${referenceCode}`;
 }
 
+function normalizeContentType(contentType?: string) {
+    return contentType
+        ?.split(";")[0]
+        .trim()
+        .toLowerCase();
+}
+
+async function safelyDeleteCv(storageKey: string) {
+    try {
+        await deleteCvObject(storageKey);
+    } catch (error) {
+        console.error("Could not remove unused CV object:", {
+            storageKey,
+            message:
+                error instanceof Error
+                    ? error.message
+                    : "Unknown R2 deletion error",
+        });
+    }
+}
+
 export async function POST(request: Request) {
+    let uploadedStorageKey = "";
+    let uploadedObjectVerified = false;
+    let applicationSaved = false;
+
     try {
         const formData = await request.formData();
 
@@ -65,37 +81,67 @@ export async function POST(request: Request) {
         }
 
         const jobSlug = getText(formData, "jobSlug");
-        const submittedJobTitle = getText(formData, "jobTitle");
+        const submittedJobTitle = getText(
+            formData,
+            "jobTitle",
+        );
         const fullName = getText(formData, "fullName");
         const email = getText(formData, "email").toLowerCase();
         const phone = getText(formData, "phone");
         const location = getText(formData, "location");
-        const currentCompany = getText(formData, "currentCompany");
+        const currentCompany = getText(
+            formData,
+            "currentCompany",
+        );
         const experience = getText(formData, "experience");
-        const portfolioUrl = getText(formData, "portfolioUrl");
-        const coverLetter = getText(formData, "coverLetter");
+        const portfolioUrl = getText(
+            formData,
+            "portfolioUrl",
+        );
+        const coverLetter = getText(
+            formData,
+            "coverLetter",
+        );
         const consent = getText(formData, "consent");
 
-        const cvValue = formData.get("cv");
-        const cv = cvValue instanceof File ? cvValue : null;
+        uploadedStorageKey = getText(
+            formData,
+            "cvStorageKey",
+        );
+
+        const cvOriginalName = getText(
+            formData,
+            "cvOriginalName",
+        );
+        const submittedCvMimeType = getText(
+            formData,
+            "cvMimeType",
+        );
+        const cvSizeText = getText(formData, "cvSize");
+        const cvSize = Number(cvSizeText);
 
         const errors: string[] = [];
         const job = getJobBySlug(jobSlug);
 
         if (!job) {
-            errors.push("The selected job could not be found.");
+            errors.push(
+                "The selected job could not be found.",
+            );
         } else if (
             submittedJobTitle &&
             submittedJobTitle !== job.title
         ) {
-            errors.push("The selected job information is invalid.");
+            errors.push(
+                "The selected job information is invalid.",
+            );
         }
 
         if (fullName.length < 2 || fullName.length > 100) {
             errors.push("Enter a valid full name.");
         }
 
-        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const emailPattern =
+            /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
         if (!emailPattern.test(email)) {
             errors.push("Enter a valid email address.");
@@ -105,7 +151,10 @@ export async function POST(request: Request) {
             errors.push("Enter a valid phone number.");
         }
 
-        if (location.length < 2 || location.length > 100) {
+        if (
+            location.length < 2 ||
+            location.length > 100
+        ) {
             errors.push("Enter a valid current location.");
         }
 
@@ -118,37 +167,136 @@ export async function POST(request: Request) {
             !portfolioUrl.startsWith("https://") &&
             !portfolioUrl.startsWith("http://")
         ) {
-            errors.push("Enter a valid portfolio or LinkedIn URL.");
+            errors.push(
+                "Enter a valid portfolio or LinkedIn URL.",
+            );
         }
 
         if (coverLetter.length > 3000) {
-            errors.push("The cover letter cannot exceed 3,000 characters.");
+            errors.push(
+                "The cover letter cannot exceed 3,000 characters.",
+            );
         }
 
         if (consent !== "on" && consent !== "true") {
-            errors.push("You must provide consent before applying.");
+            errors.push(
+                "You must provide consent before applying.",
+            );
         }
 
-        if (!cv || cv.size === 0) {
-            errors.push("Please upload your CV.");
-        } else {
-            if (cv.size > MAX_CV_SIZE) {
-                errors.push("The CV must not exceed 5 MB.");
-            }
+        if (
+            !cvOriginalName ||
+            cvOriginalName.length > 255 ||
+            cvOriginalName.includes("\0")
+        ) {
+            errors.push("The CV filename is invalid.");
+        }
 
-            const allowedType =
-                allowedCvTypes.has(cv.type) ||
-                hasAllowedExtension(cv.name);
+        if (
+            !Number.isInteger(cvSize) ||
+            cvSize <= 0 ||
+            cvSize > MAX_CV_SIZE
+        ) {
+            errors.push("The CV must not exceed 5 MB.");
+        }
 
-            if (!allowedType) {
-                errors.push("The CV must be a PDF, DOC or DOCX file.");
+        const resolvedCvMimeType = resolveCvContentType(
+            cvOriginalName,
+            submittedCvMimeType,
+        );
+
+        if (!resolvedCvMimeType) {
+            errors.push(
+                "The CV must be a PDF, DOC or DOCX file.",
+            );
+        }
+
+        const validStorageKey =
+            Boolean(job) &&
+            isValidCvStorageKey(
+                uploadedStorageKey,
+                jobSlug,
+            );
+
+        if (!validStorageKey) {
+            errors.push(
+                "The uploaded CV reference is invalid.",
+            );
+        }
+
+        /*
+         * Verify that the object really exists in the private
+         * bucket and that its size and MIME type match the
+         * metadata submitted by the browser.
+         */
+        if (
+            job &&
+            validStorageKey &&
+            resolvedCvMimeType &&
+            Number.isInteger(cvSize) &&
+            cvSize > 0 &&
+            cvSize <= MAX_CV_SIZE
+        ) {
+            try {
+                const objectMetadata =
+                    await getCvObjectMetadata(
+                        uploadedStorageKey,
+                    );
+
+                const storedContentType =
+                    normalizeContentType(
+                        objectMetadata.ContentType,
+                    );
+
+                const submittedContentType =
+                    normalizeContentType(
+                        resolvedCvMimeType,
+                    );
+
+                if (objectMetadata.ContentLength !== cvSize) {
+                    errors.push(
+                        "The uploaded CV size does not match the submitted file.",
+                    );
+                }
+
+                if (
+                    !storedContentType ||
+                    storedContentType !==
+                    submittedContentType
+                ) {
+                    errors.push(
+                        "The uploaded CV format could not be verified.",
+                    );
+                }
+
+                if (
+                    objectMetadata.ContentLength === cvSize &&
+                    storedContentType === submittedContentType
+                ) {
+                    uploadedObjectVerified = true;
+                }
+            } catch {
+                errors.push(
+                    "The uploaded CV could not be found or verified.",
+                );
             }
         }
 
-        if (errors.length > 0 || !job || !cv) {
+        if (
+            errors.length > 0 ||
+            !job ||
+            !resolvedCvMimeType ||
+            !uploadedObjectVerified
+        ) {
+            if (uploadedObjectVerified) {
+                await safelyDeleteCv(uploadedStorageKey);
+                uploadedObjectVerified = false;
+            }
+
             return Response.json(
                 {
-                    message: "Please correct the application form.",
+                    message:
+                        "Please correct the application form.",
                     errors,
                 },
                 {
@@ -157,24 +305,26 @@ export async function POST(request: Request) {
             );
         }
 
-        const referenceId = createApplicationReference();
+        const referenceId =
+            createApplicationReference();
 
-        const existingCandidate = await prisma.candidate.findUnique({
-            where: {
-                email,
-            },
-            select: {
-                applications: {
-                    where: {
-                        jobSlug: job.slug,
-                    },
-                    select: {
-                        referenceId: true,
-                    },
-                    take: 1,
+        const existingCandidate =
+            await prisma.candidate.findUnique({
+                where: {
+                    email,
                 },
-            },
-        });
+                select: {
+                    applications: {
+                        where: {
+                            jobSlug: job.slug,
+                        },
+                        select: {
+                            referenceId: true,
+                        },
+                        take: 1,
+                    },
+                },
+            });
 
         const existingApplication =
             existingCandidate?.applications[0];
@@ -190,11 +340,10 @@ export async function POST(request: Request) {
             jobSlug: job.slug,
             jobTitle: job.title,
             coverLetter: coverLetter || null,
-            cvOriginalName: cv.name,
-            cvMimeType:
-                cv.type || "application/octet-stream",
-            cvSize: cv.size,
-            cvStorageKey: null,
+            cvOriginalName,
+            cvMimeType: resolvedCvMimeType,
+            cvSize,
+            cvStorageKey: uploadedStorageKey,
             consentAt: new Date(),
         };
 
@@ -207,7 +356,8 @@ export async function POST(request: Request) {
                     fullName,
                     phone,
                     location,
-                    currentCompany: currentCompany || null,
+                    currentCompany:
+                        currentCompany || null,
                     experience,
                     portfolioUrl: portfolioUrl || null,
                     applications: {
@@ -219,7 +369,8 @@ export async function POST(request: Request) {
                     email,
                     phone,
                     location,
-                    currentCompany: currentCompany || null,
+                    currentCompany:
+                        currentCompany || null,
                     experience,
                     portfolioUrl: portfolioUrl || null,
                     applications: {
@@ -249,10 +400,15 @@ export async function POST(request: Request) {
                 "Application was not returned after creation.",
             );
         }
+
+        applicationSaved = true;
+
         return Response.json(
             {
-                message: "Your application was submitted successfully.",
-                applicationId: application.referenceId,
+                message:
+                    "Your application was submitted successfully.",
+                applicationId:
+                    application.referenceId,
                 status: application.status,
                 submittedAt: application.createdAt,
             },
@@ -261,10 +417,19 @@ export async function POST(request: Request) {
             },
         );
     } catch (error) {
+        if (
+            uploadedObjectVerified &&
+            !applicationSaved &&
+            uploadedStorageKey
+        ) {
+            await safelyDeleteCv(uploadedStorageKey);
+        }
+
         if (error instanceof DuplicateApplicationError) {
             return Response.json(
                 {
-                    message: "You have already applied for this position.",
+                    message:
+                        "You have already applied for this position.",
                     applicationId: error.referenceId,
                 },
                 {
@@ -273,7 +438,10 @@ export async function POST(request: Request) {
             );
         }
 
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (
+            error instanceof
+            Prisma.PrismaClientKnownRequestError
+        ) {
             console.error("Prisma application error:", {
                 code: error.code,
                 meta: error.meta,
@@ -283,7 +451,7 @@ export async function POST(request: Request) {
                 return Response.json(
                     {
                         message:
-                            "A database uniqueness rule prevented this application. Check the candidate and application constraints.",
+                            "An application already exists for this candidate and job.",
                     },
                     {
                         status: 409,
@@ -302,7 +470,10 @@ export async function POST(request: Request) {
         }
 
         console.error("Unexpected application error:", {
-            name: error instanceof Error ? error.name : "UnknownError",
+            name:
+                error instanceof Error
+                    ? error.name
+                    : "UnknownError",
             message:
                 error instanceof Error
                     ? error.message
@@ -312,7 +483,7 @@ export async function POST(request: Request) {
         return Response.json(
             {
                 message:
-                    "The server could not save the application. Check the development terminal for the error code.",
+                    "The server could not save the application. Please try again.",
             },
             {
                 status: 500,
