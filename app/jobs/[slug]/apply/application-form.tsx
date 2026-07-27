@@ -13,6 +13,20 @@ type SubmissionState = {
     referenceId?: string;
 };
 
+type UploadPreparationResult = {
+    uploadUrl?: string;
+    storageKey?: string;
+    contentType?: string;
+    message?: string;
+    errors?: string[];
+};
+
+type ApplicationResult = {
+    message?: string;
+    applicationId?: string;
+    errors?: string[];
+};
+
 const initialState: SubmissionState = {
     status: "idle",
     message: "",
@@ -33,34 +47,118 @@ export default function ApplicationForm({
 
         const form = event.currentTarget;
         const formData = new FormData(form);
+        const cvValue = formData.get("cv");
+
+        if (!(cvValue instanceof File) || cvValue.size === 0) {
+            setSubmission({
+                status: "error",
+                message: "Please select a CV before submitting.",
+            });
+
+            return;
+        }
 
         formData.set("jobSlug", jobSlug);
         formData.set("jobTitle", jobTitle);
 
         setSubmission({
             status: "submitting",
-            message: "Submitting your application...",
+            message: "Uploading your CV...",
         });
 
         try {
-            const response = await fetch("/api/applications", {
-                method: "POST",
-                body: formData,
+            const preparationResponse = await fetch(
+                "/api/uploads/cv",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        jobSlug,
+                        fileName: cvValue.name,
+                        fileType: cvValue.type,
+                        fileSize: cvValue.size,
+                    }),
+                },
+            );
+
+            const preparationResult =
+                (await preparationResponse.json()) as UploadPreparationResult;
+
+            if (!preparationResponse.ok) {
+                throw new Error(
+                    preparationResult.errors?.join(" ") ||
+                    preparationResult.message ||
+                    "The CV upload could not be prepared.",
+                );
+            }
+
+            if (
+                !preparationResult.uploadUrl ||
+                !preparationResult.storageKey ||
+                !preparationResult.contentType
+            ) {
+                throw new Error(
+                    "The server returned incomplete upload information.",
+                );
+            }
+
+            const cvUploadResponse = await fetch(
+                preparationResult.uploadUrl,
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": preparationResult.contentType,
+                    },
+                    body: cvValue,
+                },
+            );
+
+            if (!cvUploadResponse.ok) {
+                throw new Error(
+                    "The CV could not be uploaded. Please try again.",
+                );
+            }
+
+            /*
+             * Do not send the actual file to the Next.js application API.
+             * Only send its verified metadata and private R2 storage key.
+             */
+            formData.delete("cv");
+            formData.set(
+                "cvStorageKey",
+                preparationResult.storageKey,
+            );
+            formData.set("cvOriginalName", cvValue.name);
+            formData.set(
+                "cvMimeType",
+                preparationResult.contentType,
+            );
+            formData.set("cvSize", cvValue.size.toString());
+
+            setSubmission({
+                status: "submitting",
+                message: "Saving your application...",
             });
 
-            const result = (await response.json()) as {
-                message?: string;
-                applicationId?: string;
-                errors?: string[];
-            };
+            const applicationResponse = await fetch(
+                "/api/applications",
+                {
+                    method: "POST",
+                    body: formData,
+                },
+            );
 
-            if (!response.ok) {
-                const errorMessage =
-                    result.errors?.join(" ") ||
-                    result.message ||
-                    "The application could not be submitted.";
+            const applicationResult =
+                (await applicationResponse.json()) as ApplicationResult;
 
-                throw new Error(errorMessage);
+            if (!applicationResponse.ok) {
+                throw new Error(
+                    applicationResult.errors?.join(" ") ||
+                    applicationResult.message ||
+                    "The application could not be submitted.",
+                );
             }
 
             form.reset();
@@ -68,8 +166,9 @@ export default function ApplicationForm({
             setSubmission({
                 status: "success",
                 message:
-                    result.message || "Your application was submitted successfully.",
-                referenceId: result.applicationId,
+                    applicationResult.message ||
+                    "Your application was submitted successfully.",
+                referenceId: applicationResult.applicationId,
             });
         } catch (error) {
             setSubmission({
