@@ -188,13 +188,12 @@ export default async function JobDetailsPage({
                             </div>
                         </dl>
 
-                        <button
-                            type="button"
-                            disabled
-                            className="mt-8 w-full cursor-not-allowed rounded-xl bg-[#0b2d5c] px-5 py-3.5 text-sm font-bold text-white opacity-70"
+                        <Link
+                            href={`/jobs/${job.slug}/apply`}
+                            className="mt-8 flex w-full items-center justify-center rounded-xl bg-[#0b2d5c] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#123f77]"
                         >
-                            Application form coming next
-                        </button>
+                            Apply now
+                        </Link>
 
                         <p className="mt-3 text-center text-xs leading-5 text-slate-500">
                             The online CV and application form will be connected in the next
