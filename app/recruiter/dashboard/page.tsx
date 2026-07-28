@@ -1,3 +1,4 @@
+import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { requireRecruiter } from "@/lib/require-recruiter";
 
@@ -102,7 +103,23 @@ export default async function RecruiterDashboardPage() {
                         </h1>
                     </div>
 
-                    <SignOutButton />
+                    <div className="flex flex-wrap items-center gap-3">
+                        <Link
+                            href="/recruiter/candidates"
+                            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                            Candidates
+                        </Link>
+
+                        <Link
+                            href="/recruiter/applications"
+                            className="rounded-xl bg-[#0b2d5c] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#123f77]"
+                        >
+                            Manage applications
+                        </Link>
+
+                        <SignOutButton />
+                    </div>
                 </div>
             </header>
 
