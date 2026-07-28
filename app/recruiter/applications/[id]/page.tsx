@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-
+import NoteForm from "./note-form";
 import {
     ApplicationStatusValue,
     getApplicationStatusLabel,
@@ -70,6 +70,21 @@ export default async function ApplicationDetailsPage({
                                 createdAt: true,
                             },
                         },
+                    },
+                },
+                activities: {
+                    orderBy: {
+                        createdAt: "desc",
+                    },
+                    select: {
+                        id: true,
+                        type: true,
+                        message: true,
+                        previousStatus: true,
+                        newStatus: true,
+                        recruiterName: true,
+                        recruiterEmail: true,
+                        createdAt: true,
                     },
                 },
             },
@@ -201,7 +216,77 @@ export default async function ApplicationDetailsPage({
                                 "No cover letter was provided."}
                         </p>
                     </section>
+                    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <div>
+                            <h2 className="text-xl font-bold text-[#0b2d5c]">
+                                Recruiter activity
+                            </h2>
 
+                            <p className="mt-1 text-sm text-slate-500">
+                                Status history and internal recruiter notes.
+                            </p>
+                        </div>
+
+                        {application.activities.length === 0 ? (
+                            <p className="mt-6 rounded-xl bg-slate-50 p-5 text-sm text-slate-500">
+                                No audit activity has been recorded yet.
+                                Changes made before audit tracking was enabled
+                                cannot be reconstructed.
+                            </p>
+                        ) : (
+                            <div className="relative mt-7 space-y-6 before:absolute before:bottom-3 before:left-[11px] before:top-3 before:w-px before:bg-slate-200">
+                                {application.activities.map((activity) => (
+                                    <article
+                                        key={activity.id}
+                                        className="relative pl-10"
+                                    >
+                                        <span
+                                            className={`absolute left-0 top-1 h-6 w-6 rounded-full border-4 border-white ${activity.type === "STATUS_CHANGE"
+                                                ? "bg-[#0f5c9c]"
+                                                : "bg-amber-500"
+                                                }`}
+                                        />
+
+                                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+                                            <div className="flex flex-wrap items-start justify-between gap-3">
+                                                <div>
+                                                    <p className="font-bold text-slate-900">
+                                                        {activity.type ===
+                                                            "STATUS_CHANGE"
+                                                            ? `Status changed from ${getApplicationStatusLabel(
+                                                                activity.previousStatus ||
+                                                                "UNKNOWN",
+                                                            )} to ${getApplicationStatusLabel(
+                                                                activity.newStatus ||
+                                                                "UNKNOWN",
+                                                            )}`
+                                                            : "Internal recruiter note"}
+                                                    </p>
+
+                                                    <p className="mt-1 text-sm text-slate-500">
+                                                        {activity.recruiterName} ·{" "}
+                                                        {activity.recruiterEmail}
+                                                    </p>
+                                                </div>
+
+                                                <time className="text-xs text-slate-400">
+                                                    {formatDateTime(
+                                                        activity.createdAt,
+                                                    )}
+                                                </time>
+                                            </div>
+
+                                            {activity.message && (
+                                                <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-slate-700">
+                                                    {activity.message}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </article>
+                                ))}
+                            </div>
+                        )}
+                    </section>
                     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                         <h2 className="text-xl font-bold text-[#0b2d5c]">
                             Candidate application history
@@ -249,7 +334,7 @@ export default async function ApplicationDetailsPage({
                             application.status as ApplicationStatusValue
                         }
                     />
-
+                    <NoteForm applicationId={application.id} />
                     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                         <h2 className="text-lg font-bold text-[#0b2d5c]">
                             Candidate CV
