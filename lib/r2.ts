@@ -1,12 +1,15 @@
 import {
     DeleteObjectCommand,
+    GetObjectCommand,
     HeadObjectCommand,
     PutObjectCommand,
     S3Client,
 } from "@aws-sdk/client-s3";
+
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export const CV_UPLOAD_URL_TTL_SECONDS = 300;
+export const CV_DOWNLOAD_URL_TTL_SECONDS = 60;
 
 let r2Client: S3Client | undefined;
 
@@ -82,5 +85,41 @@ export async function deleteCvObject(
             Bucket: getR2BucketName(),
             Key: storageKey,
         }),
+    );
+}
+function createSafeDownloadFilename(
+    originalFilename: string,
+) {
+    const cleanedFilename = originalFilename
+        .replace(/[\r\n"\\/]/g, "_")
+        .trim();
+
+    return cleanedFilename || "candidate-cv";
+}
+
+export async function createCvDownloadUrl({
+    storageKey,
+    originalFilename,
+    contentType,
+}: {
+    storageKey: string;
+    originalFilename: string;
+    contentType: string;
+}) {
+    const safeFilename =
+        createSafeDownloadFilename(originalFilename);
+
+    return getSignedUrl(
+        getR2Client(),
+        new GetObjectCommand({
+            Bucket: getR2BucketName(),
+            Key: storageKey,
+            ResponseContentType: contentType,
+            ResponseContentDisposition:
+                `attachment; filename="${safeFilename}"`,
+        }),
+        {
+            expiresIn: CV_DOWNLOAD_URL_TTL_SECONDS,
+        },
     );
 }
