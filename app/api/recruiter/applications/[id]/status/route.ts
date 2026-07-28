@@ -17,6 +17,7 @@ type RouteContext = {
 
 type StatusRequestBody = {
     status?: unknown;
+    comment?: unknown;
 };
 
 export async function PATCH(
@@ -64,6 +65,23 @@ export async function PATCH(
         );
     }
 
+    const comment =
+        typeof body.comment === "string"
+            ? body.comment.trim()
+            : "";
+
+    if (comment.length > 2000) {
+        return Response.json(
+            {
+                message:
+                    "The status comment cannot exceed 2,000 characters.",
+            },
+            {
+                status: 400,
+            },
+        );
+    }
+
     const existingApplication =
         await prisma.application.findUnique({
             where: {
@@ -71,6 +89,8 @@ export async function PATCH(
             },
             select: {
                 id: true,
+                status: true,
+                candidateId: true,
             },
         });
 
@@ -85,24 +105,62 @@ export async function PATCH(
         );
     }
 
-    const application = await prisma.application.update({
-        where: {
-            id,
-        },
-        data: {
-            status: body.status,
-        },
-        select: {
-            id: true,
-            referenceId: true,
-            status: true,
-            updatedAt: true,
-        },
-    });
+    if (existingApplication.status === body.status) {
+        return Response.json(
+            {
+                message:
+                    "The application already has the selected status.",
+            },
+            {
+                status: 400,
+            },
+        );
+    }
+
+    /*
+     * The application status and audit event are written
+     * together as one nested relational operation.
+     */
+    const application =
+        await prisma.application.update({
+            where: {
+                id,
+            },
+            data: {
+                status: body.status,
+
+                activities: {
+                    create: {
+                        type: "STATUS_CHANGE",
+                        message: comment || null,
+                        previousStatus:
+                            existingApplication.status,
+                        newStatus: body.status,
+                        recruiterId: session.user.id,
+                        recruiterName: session.user.name,
+                        recruiterEmail: session.user.email,
+                    },
+                },
+            },
+            select: {
+                id: true,
+                referenceId: true,
+                status: true,
+                updatedAt: true,
+            },
+        });
 
     revalidatePath("/recruiter/dashboard");
     revalidatePath("/recruiter/applications");
-    revalidatePath(`/recruiter/applications/${id}`);
+    revalidatePath("/recruiter/candidates");
+
+    revalidatePath(
+        `/recruiter/applications/${id}`,
+    );
+
+    revalidatePath(
+        `/recruiter/candidates/${existingApplication.candidateId}`,
+    );
 
     return Response.json({
         message: `Status updated to ${getApplicationStatusLabel(

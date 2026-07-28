@@ -20,6 +20,11 @@ enum ApplicationStatus {
   ARCHIVED
 }
 
+enum ApplicationActivityType {
+  STATUS_CHANGE
+  NOTE
+}
+
 model Candidate {
   id             String        @id @default(cuid())
   fullName       String        @db.VarChar(100)
@@ -39,21 +44,22 @@ model Candidate {
 }
 
 model Application {
-  id             String            @id @default(cuid())
-  referenceId    String            @unique @db.VarChar(40)
-  jobSlug        String            @db.VarChar(160)
-  jobTitle       String            @db.VarChar(200)
-  coverLetter    String?           @db.Text
-  status         ApplicationStatus @default(APPLIED)
-  cvOriginalName String            @db.VarChar(255)
-  cvMimeType     String            @db.VarChar(150)
+  id             String                @id @default(cuid())
+  referenceId    String                @unique @db.VarChar(40)
+  jobSlug        String                @db.VarChar(160)
+  jobTitle       String                @db.VarChar(200)
+  coverLetter    String?               @db.Text
+  status         ApplicationStatus     @default(APPLIED)
+  cvOriginalName String                @db.VarChar(255)
+  cvMimeType     String                @db.VarChar(150)
   cvSize         Int
-  cvStorageKey   String?           @db.VarChar(500)
+  cvStorageKey   String?               @db.VarChar(500)
   consentAt      DateTime
   candidateId    String
-  candidate      Candidate         @relation(fields: [candidateId], references: [id], onDelete: Restrict)
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  candidate      Candidate             @relation(fields: [candidateId], references: [id], onDelete: Restrict)
+  activities     ApplicationActivity[]
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
 
   @@unique([candidateId, jobSlug])
   @@index([status])
@@ -63,15 +69,16 @@ model Application {
 }
 
 model User {
-  id            String    @id
-  name          String    @db.VarChar(100)
-  email         String    @unique @db.VarChar(150)
-  emailVerified Boolean   @default(false)
-  image         String?   @db.VarChar(500)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  sessions      Session[]
-  accounts      Account[]
+  id                    String                @id
+  name                  String                @db.VarChar(100)
+  email                 String                @unique @db.VarChar(150)
+  emailVerified         Boolean               @default(false)
+  image                 String?               @db.VarChar(500)
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  sessions              Session[]
+  accounts              Account[]
+  applicationActivities ApplicationActivity[]
 
   @@map("user")
 }
@@ -124,4 +131,28 @@ model Verification {
   @@index([identifier])
   @@index([expiresAt])
   @@map("verification")
+}
+
+model ApplicationActivity {
+  id             String                  @id @default(cuid())
+  type           ApplicationActivityType
+  message        String?                 @db.Text
+  previousStatus ApplicationStatus?
+  newStatus      ApplicationStatus?
+
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  recruiterId String
+  recruiter   User   @relation(fields: [recruiterId], references: [id], onDelete: Restrict)
+
+  recruiterName  String @db.VarChar(100)
+  recruiterEmail String @db.VarChar(150)
+
+  createdAt DateTime @default(now())
+
+  @@index([applicationId, createdAt])
+  @@index([recruiterId, createdAt])
+  @@index([type])
+  @@map("application_activities")
 }

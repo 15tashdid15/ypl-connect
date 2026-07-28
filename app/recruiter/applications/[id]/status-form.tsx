@@ -29,7 +29,9 @@ export default function StatusForm({
             currentStatus,
         );
 
+    const [comment, setComment] = useState("");
     const [message, setMessage] = useState("");
+
     const [isSaving, setIsSaving] =
         useState(false);
 
@@ -51,6 +53,7 @@ export default function StatusForm({
                     },
                     body: JSON.stringify({
                         status,
+                        comment,
                     }),
                 },
             );
@@ -67,6 +70,8 @@ export default function StatusForm({
             }
 
             setSavedStatus(status);
+            setComment("");
+
             setMessage(
                 result.message ||
                 "Application status updated.",
@@ -103,7 +108,7 @@ export default function StatusForm({
                                 .value as ApplicationStatusValue,
                         )
                     }
-                    className="mt-2 h-12 w-full rounded-xl border border-slate-300 bg-white px-4 font-normal"
+                    className="mt-2 h-12 w-full rounded-xl border border-slate-300 bg-white px-4 font-normal outline-none focus:border-[#0f5c9c] focus:ring-4 focus:ring-blue-100"
                 >
                     {APPLICATION_STATUSES.map((item) => (
                         <option
@@ -114,6 +119,24 @@ export default function StatusForm({
                         </option>
                     ))}
                 </select>
+            </label>
+
+            <label className="mt-5 block text-sm font-semibold text-slate-700">
+                Status comment
+                <textarea
+                    value={comment}
+                    onChange={(event) =>
+                        setComment(event.target.value)
+                    }
+                    maxLength={2000}
+                    rows={4}
+                    placeholder="Optional reason, client feedback or next action"
+                    className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 font-normal leading-6 outline-none focus:border-[#0f5c9c] focus:ring-4 focus:ring-blue-100"
+                />
+
+                <span className="mt-1 block text-right text-xs font-normal text-slate-400">
+                    {comment.length}/2000
+                </span>
             </label>
 
             <button
@@ -127,6 +150,11 @@ export default function StatusForm({
                     ? "Updating status..."
                     : "Update status"}
             </button>
+
+            <p className="mt-3 text-xs leading-5 text-slate-500">
+                Use the internal-note form when no status
+                change is required.
+            </p>
 
             {message && (
                 <p
