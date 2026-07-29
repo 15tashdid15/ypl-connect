@@ -378,6 +378,8 @@ export async function POST(request: Request) {
                     },
                 },
                 select: {
+                    id: true,
+
                     applications: {
                         where: {
                             referenceId,
@@ -400,7 +402,32 @@ export async function POST(request: Request) {
                 "Application was not returned after creation.",
             );
         }
+        const candidateDocument =
+            await prisma.candidateDocument.create({
+                data: {
+                    type: "CV",
+                    source: "APPLICATION_UPLOAD",
 
+                    originalName: cvOriginalName,
+                    mimeType: resolvedCvMimeType,
+                    size: cvSize,
+
+                    storageKey: uploadedStorageKey,
+
+                    candidateId:
+                        candidateWithApplication.id,
+                },
+            });
+
+
+        await prisma.cvParseJob.create({
+            data: {
+                candidateDocumentId:
+                    candidateDocument.id,
+
+                status: "QUEUED",
+            },
+        });
         applicationSaved = true;
 
         return Response.json(
