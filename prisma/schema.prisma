@@ -196,6 +196,7 @@ model CvParseJob {
   candidateDocumentId String
   candidateDocument   CandidateDocument @relation(fields: [candidateDocumentId], references: [id], onDelete: Cascade)
   result              CvParseResult?
+  extractedText       CvExtractedText?
   attemptCount        Int               @default(0)
 
   startedAt   DateTime?
@@ -210,6 +211,27 @@ model CvParseJob {
   @@index([status])
   @@index([createdAt])
   @@map("cv_parse_jobs")
+}
+
+model CvExtractedText {
+  id String @id @default(cuid())
+
+  parseJobId String
+  parseJob   CvParseJob @relation(fields: [parseJobId], references: [id], onDelete: Cascade)
+
+  extractedText String @db.Text
+
+  extractionMethod String @db.VarChar(50)
+
+  pageCount      Int?
+  characterCount Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([parseJobId])
+  @@index([characterCount])
+  @@map("cv_extracted_texts")
 }
 
 model CvParseResult {
