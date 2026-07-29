@@ -26,17 +26,19 @@ enum ApplicationActivityType {
 }
 
 model Candidate {
-  id             String        @id @default(cuid())
-  fullName       String        @db.VarChar(100)
-  email          String        @unique @db.VarChar(150)
-  phone          String        @db.VarChar(30)
-  location       String        @db.VarChar(100)
-  currentCompany String?       @db.VarChar(150)
-  experience     String        @db.VarChar(50)
-  portfolioUrl   String?       @db.VarChar(300)
+  id             String                  @id @default(cuid())
+  fullName       String                  @db.VarChar(100)
+  email          String                  @unique @db.VarChar(150)
+  phone          String                  @db.VarChar(30)
+  location       String                  @db.VarChar(100)
+  currentCompany String?                 @db.VarChar(150)
+  experience     String                  @db.VarChar(50)
+  portfolioUrl   String?                 @db.VarChar(300)
   applications   Application[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  documents      CandidateDocument[]
+  searchProfile  CandidateSearchProfile?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
 
   @@index([fullName])
   @@index([phone])
@@ -155,4 +157,164 @@ model ApplicationActivity {
   @@index([recruiterId, createdAt])
   @@index([type])
   @@map("application_activities")
+}
+
+model CandidateDocument {
+  id String @id @default(cuid())
+
+  type   CandidateDocumentType   @default(CV)
+  source CandidateDocumentSource
+
+  originalName String @db.VarChar(255)
+  mimeType     String @db.VarChar(150)
+  size         Int
+
+  storageKey     String  @db.VarChar(500)
+  objectETag     String? @db.VarChar(255)
+  checksumSha256 String? @db.VarChar(64)
+
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  parseJobs CvParseJob[]
+
+  uploadedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([candidateId])
+  @@index([storageKey])
+  @@index([checksumSha256])
+  @@map("candidate_documents")
+}
+
+model CvParseJob {
+  id String @id @default(cuid())
+
+  status CvParseJobStatus @default(QUEUED)
+
+  candidateDocumentId String
+  candidateDocument   CandidateDocument @relation(fields: [candidateDocumentId], references: [id], onDelete: Cascade)
+  result              CvParseResult?
+  attemptCount        Int               @default(0)
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  errorMessage String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([candidateDocumentId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("cv_parse_jobs")
+}
+
+model CvParseResult {
+  id String @id @default(cuid())
+
+  parseJobId String
+  parseJob   CvParseJob @relation(fields: [parseJobId], references: [id], onDelete: Cascade)
+
+  fullName String? @db.VarChar(100)
+
+  headline String? @db.VarChar(200)
+
+  summary String? @db.Text
+
+  totalExperienceYears Int?
+
+  skills Json?
+
+  education Json?
+
+  certifications Json?
+
+  languages Json?
+
+  extractedKeywords Json?
+
+  reviewStatus CvReviewStatus @default(UNREVIEWED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([parseJobId])
+  @@index([reviewStatus])
+  @@map("cv_parse_results")
+}
+
+model CandidateSearchProfile {
+  id String @id @default(cuid())
+
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  searchableText String @db.Text
+
+  skills String[]
+
+  keywords String[]
+
+  totalExperienceYears Int?
+
+  highestEducation String? @db.VarChar(150)
+
+  lastUpdatedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([candidateId])
+  @@index([candidateId])
+  @@index([totalExperienceYears])
+  @@map("candidate_search_profiles")
+}
+
+enum CandidateDocumentType {
+  CV
+  COVER_LETTER
+  CERTIFICATE
+  PORTFOLIO
+  OTHER
+}
+
+enum CandidateDocumentSource {
+  APPLICATION_UPLOAD
+  RECRUITER_UPLOAD
+  CANDIDATE_UPLOAD
+  LEGACY_BACKFILL
+}
+
+enum CvParseStatus {
+  QUEUED
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum CvParseTrigger {
+  R2_EVENT
+  MANUAL
+  RETRY
+  BACKFILL
+}
+
+enum CvReviewStatus {
+  UNREVIEWED
+  IN_REVIEW
+  PARTIALLY_VERIFIED
+  VERIFIED
+  REJECTED
+}
+
+enum CvParseJobStatus {
+  QUEUED
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELLED
 }
