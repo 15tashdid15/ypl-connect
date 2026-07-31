@@ -1,4 +1,12 @@
-import { extractCandidateProfile } from "@/lib/cv-intelligence/extract-profile";
+import {
+    generateEmbedding,
+} from "@/lib/ai/embedding-provider";
+import {
+    buildCandidateSearchProfile,
+} from "@/lib/ai/candidate-profile";
+import {
+    getActiveAIProvider,
+} from "@/lib/ai/router";
 import prisma from "@/lib/prisma";
 import { getCvObjectBuffer } from "@/lib/r2";
 import { extractCvText } from "./extract";
@@ -13,7 +21,11 @@ export async function processCvParseJob(
                 id: parseJobId,
             },
             include: {
-                candidateDocument: true,
+                candidateDocument: {
+                    include: {
+                        candidate: true,
+                    },
+                },
             },
         });
 
@@ -50,7 +62,8 @@ export async function processCvParseJob(
 
         const document =
             parseJob.candidateDocument;
-
+        const candidate =
+            document.candidate;
 
         const buffer =
             await getCvObjectBuffer(
@@ -89,8 +102,12 @@ export async function processCvParseJob(
             },
         });
 
+        const aiProvider =
+            await getActiveAIProvider();
+
+
         const profile =
-            extractCandidateProfile(
+            await aiProvider.extractCandidateProfile(
                 extracted.text,
             );
 
@@ -122,12 +139,71 @@ export async function processCvParseJob(
 
                 languages:
                     profile.languages,
+                experience:
+                    profile.experience,
 
                 extractedKeywords:
-                    profile.keywords,
+                    profile.extractedKeywords,
             },
         });
+        const searchProfile =
+            buildCandidateSearchProfile({
+                fullName:
+                    profile.fullName,
 
+                headline:
+                    profile.headline,
+
+                summary:
+                    profile.summary,
+
+                skills:
+                    profile.skills,
+
+                keywords:
+                    profile.extractedKeywords,
+
+                education:
+                    profile.education,
+
+                totalExperienceYears:
+                    profile.totalExperienceYears,
+            });
+        const embedding =
+            await generateEmbedding(
+                searchProfile.searchableText,
+            );
+
+        await prisma.candidateSearchProfile.upsert({
+
+            where: {
+                candidateId:
+                    candidate.id,
+            },
+
+            update: {
+
+                ...searchProfile,
+
+                embedding,
+
+                lastUpdatedAt:
+                    new Date(),
+
+            },
+
+            create: {
+
+                candidateId:
+                    candidate.id,
+
+                ...searchProfile,
+
+                embedding,
+
+            },
+
+        });
         await prisma.cvParseJob.update({
             where: {
                 id: parseJob.id,

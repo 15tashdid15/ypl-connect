@@ -258,6 +258,8 @@ model CvParseResult {
 
   extractedKeywords Json?
 
+  experience Json?
+
   reviewStatus CvReviewStatus @default(UNREVIEWED)
 
   createdAt DateTime @default(now())
@@ -283,6 +285,7 @@ model CandidateSearchProfile {
   totalExperienceYears Int?
 
   highestEducation String? @db.VarChar(150)
+  embedding        Json?
 
   lastUpdatedAt DateTime @default(now())
 
@@ -293,6 +296,28 @@ model CandidateSearchProfile {
   @@index([candidateId])
   @@index([totalExperienceYears])
   @@map("candidate_search_profiles")
+}
+
+model AIConfiguration {
+  id String @id @default(cuid())
+
+  provider AIProvider @default(LOCAL)
+
+  fallbackEnabled Boolean @default(false)
+
+  fallbackProvider AIProvider?
+
+  confidenceThreshold Int @default(80)
+
+  dailyTokenLimit Int?
+
+  monthlyTokenLimit Int?
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@map("ai_configuration")
 }
 
 enum CandidateDocumentType {
@@ -339,4 +364,10 @@ enum CvParseJobStatus {
   SUCCEEDED
   FAILED
   CANCELLED
+}
+
+enum AIProvider {
+  LOCAL
+  GEMINI
+  OPENAI
 }
