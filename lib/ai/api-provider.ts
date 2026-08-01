@@ -2,8 +2,10 @@ import type {
     CVAIProvider,
 } from "./provider";
 
+
 import type {
     AIExtractedCandidateProfile,
+    AIExtractedJobProfile,
 } from "./types";
 
 
@@ -25,9 +27,27 @@ export class APIAIProvider
             certifications: [],
 
             languages: [],
+
             experience: [],
 
             extractedKeywords: [],
+
+        };
+
+    }
+
+
+
+    async extractJobProfile(
+        text: string,
+    ): Promise<AIExtractedJobProfile> {
+
+
+        return {
+
+            requiredSkills: [],
+
+            keywords: [],
 
         };
 

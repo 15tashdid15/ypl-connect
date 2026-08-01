@@ -45,6 +45,32 @@ model Candidate {
   @@map("candidates")
 }
 
+model Job {
+  id String @id @default(cuid())
+
+  title String @db.VarChar(200)
+
+  description String @db.Text
+
+  companyName String @db.VarChar(200)
+
+  location String? @db.VarChar(150)
+
+  employmentType String? @db.VarChar(50)
+
+  experienceRequired Int?
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  jobSearchProfile JobSearchProfile?
+
+  @@index([title])
+  @@index([companyName])
+  @@map("jobs")
+}
+
 model Application {
   id             String                @id @default(cuid())
   referenceId    String                @unique @db.VarChar(40)
@@ -318,6 +344,31 @@ model AIConfiguration {
   updatedAt DateTime @updatedAt
 
   @@map("ai_configuration")
+}
+
+model JobSearchProfile {
+  id String @id @default(cuid())
+
+  jobId String
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  searchableText String @db.Text
+
+  requiredSkills String[]
+
+  requiredExperience Int?
+
+  educationRequirement String? @db.VarChar(150)
+
+  embedding Json?
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([jobId])
+  @@index([jobId])
+  @@map("job_search_profiles")
 }
 
 enum CandidateDocumentType {

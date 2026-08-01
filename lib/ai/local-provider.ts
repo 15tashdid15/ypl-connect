@@ -5,6 +5,7 @@ import type {
 
 import type {
     AIExtractedCandidateProfile,
+    AIExtractedJobProfile,
 } from "./types";
 
 
@@ -12,7 +13,9 @@ import {
     askOllama,
 } from "./ollama-client";
 
-
+import {
+    buildJobExtractionPrompt,
+} from "@/lib/job-intelligence/job-prompt";
 
 function buildCVExtractionPrompt(
     text: string,
@@ -128,7 +131,9 @@ export class LocalAIProvider
                 cleaned,
             );
 
-        const normalizedProfile: AIExtractedCandidateProfile = {
+
+        const normalizedProfile:
+            AIExtractedCandidateProfile = {
 
             fullName:
                 profile.fullName ?? undefined,
@@ -142,30 +147,25 @@ export class LocalAIProvider
             totalExperienceYears:
                 profile.totalExperienceYears ?? undefined,
 
-
             skills:
                 Array.isArray(profile.skills)
                     ? profile.skills
                     : [],
-
 
             education:
                 Array.isArray(profile.education)
                     ? profile.education
                     : [],
 
-
             certifications:
                 Array.isArray(profile.certifications)
                     ? profile.certifications
                     : [],
 
-
             languages:
                 Array.isArray(profile.languages)
                     ? profile.languages
                     : [],
-
 
             extractedKeywords:
                 Array.isArray(profile.extractedKeywords)
@@ -176,13 +176,17 @@ export class LocalAIProvider
                 Array.isArray(profile.experience)
                     ? profile.experience.map((item: any) => ({
 
-                        company: item.company ?? "",
+                        company:
+                            item.company ?? "",
 
-                        role: item.role ?? "",
+                        role:
+                            item.role ?? "",
 
-                        startDate: item.startDate ?? "",
+                        startDate:
+                            item.startDate ?? "",
 
-                        endDate: item.endDate ?? "",
+                        endDate:
+                            item.endDate ?? "",
 
                         responsibilities:
                             Array.isArray(item.responsibilities)
@@ -202,6 +206,66 @@ export class LocalAIProvider
 
         return normalizedProfile;
 
-    }
+    } // <-- extractCandidateProfile ends here
+
+
+
+    async extractJobProfile(
+        text: string,
+    ): Promise<AIExtractedJobProfile> {
+
+
+        const prompt =
+            buildJobExtractionPrompt(
+                text,
+            );
+
+
+        const response =
+            await askOllama(
+                prompt,
+            );
+
+
+        const cleaned =
+            cleanJsonResponse(
+                response,
+            );
+
+
+        const profile =
+            JSON.parse(
+                cleaned,
+            );
+
+
+        return {
+
+            title:
+                profile.title ?? undefined,
+
+            summary:
+                profile.summary ?? undefined,
+
+            requiredSkills:
+                Array.isArray(profile.requiredSkills)
+                    ? profile.requiredSkills
+                    : [],
+
+            requiredExperienceYears:
+                profile.requiredExperienceYears ?? undefined,
+
+            educationRequirement:
+                profile.educationRequirement ?? undefined,
+
+            keywords:
+                Array.isArray(profile.keywords)
+                    ? profile.keywords
+                    : [],
+
+        };
+
+    } // <-- extractJobProfile ends here
+
 
 }
