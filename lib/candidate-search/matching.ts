@@ -1,39 +1,56 @@
+import {
+    normalizeSkill,
+} from "@/lib/skill-intelligence/normalize-skill";
+
 export function calculateSkillMatch(
     candidateSkills: string[],
     requiredSkills: string[],
-) {
+): number {
 
 
-    if (
-        requiredSkills.length === 0
-    ) {
-        return 0;
-    }
+    const normalizedCandidateSkills =
+        candidateSkills.map(
+            skill =>
+                normalizeSkill(skill),
+        );
 
 
-    const candidateText =
-        candidateSkills
-            .join(" ")
-            .toLowerCase();
+
+    const normalizedRequiredSkills =
+        requiredSkills.map(
+            skill =>
+                normalizeSkill(skill),
+        );
 
 
 
     const matched =
-        requiredSkills.filter(
-            skill =>
-                candidateText.includes(
-                    skill.toLowerCase(),
+        normalizedRequiredSkills.filter(
+            required =>
+                normalizedCandidateSkills.includes(
+                    required,
                 ),
         );
 
 
-    return Number(
+
+    if (
+        normalizedRequiredSkills.length === 0
+    ) {
+
+        return 0;
+
+    }
+
+
+
+    return Math.round(
         (
             matched.length /
-            requiredSkills.length *
-            100
+            normalizedRequiredSkills.length
         )
-            .toFixed(2),
+        *
+        100
     );
 
 }
@@ -124,25 +141,33 @@ export function generateMatchReasons({
 
 
 
-    const candidateSkillText =
-        candidateSkills
-            .join(" ")
-            .toLowerCase();
-
-
-
     for (
-        const skill of requiredSkills
+        const requiredSkill of requiredSkills
     ) {
 
+
+        const normalizedRequiredSkill =
+            normalizeSkill(
+                requiredSkill,
+            );
+
+
+        const matchedCandidateSkill =
+            candidateSkills.find(
+                candidateSkill =>
+                    normalizeSkill(
+                        candidateSkill,
+                    )
+                    === normalizedRequiredSkill,
+            );
+
+
         if (
-            candidateSkillText.includes(
-                skill.toLowerCase(),
-            )
+            matchedCandidateSkill
         ) {
 
             reasons.push(
-                `Matched skill: ${skill}`,
+                `Matched skill: ${requiredSkill} (candidate: ${matchedCandidateSkill})`,
             );
 
         }
