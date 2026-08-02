@@ -2,6 +2,64 @@ import "dotenv/config";
 import prisma from "@/lib/prisma";
 import { processCvParseJob } from "@/lib/cv-parser/worker";
 
+const CV_JOB_TIMEOUT_MINUTES = 30;
+const MAX_CV_JOB_ATTEMPTS = 3;
+
+async function recoverStaleCvParseJobs() {
+    const timeoutDate =
+        new Date(
+            Date.now() -
+            CV_JOB_TIMEOUT_MINUTES *
+            60 *
+            1000,
+        );
+
+
+    const staleJobs =
+        await prisma.cvParseJob.findMany({
+            where: {
+                status: "PROCESSING",
+
+                startedAt: {
+                    lt: timeoutDate,
+                },
+
+                attemptCount: {
+                    lt: MAX_CV_JOB_ATTEMPTS,
+                },
+            },
+
+            select: {
+                id: true,
+            },
+        });
+
+
+    if (staleJobs.length === 0) {
+        return;
+    }
+
+
+    await prisma.cvParseJob.updateMany({
+        where: {
+            id: {
+                in: staleJobs.map(
+                    (job) => job.id,
+                ),
+            },
+        },
+
+        data: {
+            status: "QUEUED",
+            startedAt: null,
+        },
+    });
+
+
+    console.log(
+        `Recovered ${staleJobs.length} stale CV parse job(s).`,
+    );
+}
 
 async function claimNextCvParseJob() {
     return await prisma.$transaction(
@@ -40,6 +98,9 @@ async function claimNextCvParseJob() {
 
 
 async function main() {
+
+    await recoverStaleCvParseJobs();
+
 
     const job =
         await claimNextCvParseJob();
