@@ -26,11 +26,11 @@ export type AIExtractedCandidateProfile = {
 
     skills: string[];
 
-    education: string[];
+    education: Record<string, unknown>[];
 
-    certifications: string[];
+    certifications: unknown[];
 
-    languages: string[];
+    languages: unknown[];
 
     extractedKeywords: string[];
 

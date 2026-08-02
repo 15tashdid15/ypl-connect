@@ -1,4 +1,7 @@
 import {
+    mapCandidateProfileForPersistence,
+} from "@/lib/ai/mappers/candidate-profile-mapper";
+import {
     generateEmbedding,
 } from "@/lib/ai/embedding-provider";
 import {
@@ -123,76 +126,21 @@ export async function processCvParseJob(
             await aiProvider.extractCandidateProfile(
                 extracted.text,
             );
-
+        const persistedProfile =
+            mapCandidateProfileForPersistence(
+                profile,
+            );
 
         await prisma.cvParseResult.upsert({
             where: {
                 parseJobId: parseJob.id,
             },
-            update: {
-                fullName:
-                    profile.fullName ?? null,
-
-                headline:
-                    profile.headline ?? null,
-
-                summary:
-                    profile.summary ?? null,
-
-                totalExperienceYears:
-                    profile.totalExperienceYears ?? null,
-
-                skills:
-                    profile.skills,
-
-                education:
-                    profile.education,
-
-                certifications:
-                    profile.certifications,
-
-                languages:
-                    profile.languages,
-
-                experience:
-                    profile.experience,
-
-                extractedKeywords:
-                    profile.extractedKeywords,
-            },
+            update: persistedProfile,
             create: {
                 parseJobId:
                     parseJob.id,
 
-                fullName:
-                    profile.fullName ?? null,
-
-                headline:
-                    profile.headline ?? null,
-
-                summary:
-                    profile.summary ?? null,
-
-                totalExperienceYears:
-                    profile.totalExperienceYears ?? null,
-
-                skills:
-                    profile.skills,
-
-                education:
-                    profile.education,
-
-                certifications:
-                    profile.certifications,
-
-                languages:
-                    profile.languages,
-
-                experience:
-                    profile.experience,
-
-                extractedKeywords:
-                    profile.extractedKeywords,
+                ...persistedProfile,
             },
         });
         const searchProfile =

@@ -17,6 +17,10 @@ import {
     buildJobExtractionPrompt,
 } from "@/lib/job-intelligence/job-prompt";
 
+import {
+    validateCandidateProfile,
+} from "./validators/candidate-profile-validator";
+
 function buildCVExtractionPrompt(
     text: string,
 ) {
@@ -126,9 +130,15 @@ export class LocalAIProvider
             );
 
 
-        const profile =
+        const rawProfile =
             JSON.parse(
                 cleaned,
+            );
+
+
+        const profile =
+            validateCandidateProfile(
+                rawProfile,
             );
 
 
