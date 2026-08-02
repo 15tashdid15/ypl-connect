@@ -3,17 +3,46 @@ import prisma from "@/lib/prisma";
 import { processCvParseJob } from "@/lib/cv-parser/worker";
 
 
+async function claimNextCvParseJob() {
+    return await prisma.$transaction(
+        async (tx) => {
+            const job =
+                await tx.cvParseJob.findFirst({
+                    where: {
+                        status: "QUEUED",
+                    },
+                    orderBy: {
+                        createdAt: "asc",
+                    },
+                });
+
+
+            if (!job) {
+                return null;
+            }
+
+
+            return await tx.cvParseJob.update({
+                where: {
+                    id: job.id,
+                },
+                data: {
+                    status: "PROCESSING",
+                    startedAt: new Date(),
+                    attemptCount: {
+                        increment: 1,
+                    },
+                },
+            });
+        },
+    );
+}
+
+
 async function main() {
 
     const job =
-        await prisma.cvParseJob.findFirst({
-            where: {
-                status: "QUEUED",
-            },
-            orderBy: {
-                createdAt: "asc",
-            },
-        });
+        await claimNextCvParseJob();
 
 
     if (!job) {

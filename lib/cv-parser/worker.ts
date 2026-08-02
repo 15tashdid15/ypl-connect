@@ -46,18 +46,7 @@ export async function processCvParseJob(
 
     try {
 
-        await prisma.cvParseJob.update({
-            where: {
-                id: parseJob.id,
-            },
-            data: {
-                status: "PROCESSING",
-                startedAt: new Date(),
-                attemptCount: {
-                    increment: 1,
-                },
-            },
-        });
+
 
 
         const document =
