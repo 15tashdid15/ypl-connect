@@ -113,10 +113,12 @@ export async function POST(request: Request) {
             formData,
             "cvOriginalName",
         );
+
         const submittedCvMimeType = getText(
             formData,
             "cvMimeType",
         );
+
         const cvSizeText = getText(formData, "cvSize");
         const cvSize = Number(cvSizeText);
 
@@ -347,89 +349,97 @@ export async function POST(request: Request) {
             consentAt: new Date(),
         };
 
-        const candidateWithApplication =
-            await prisma.candidate.upsert({
-                where: {
-                    email,
-                },
-                update: {
-                    fullName,
-                    phone,
-                    location,
-                    currentCompany:
-                        currentCompany || null,
-                    experience,
-                    portfolioUrl: portfolioUrl || null,
-                    applications: {
-                        create: applicationData,
-                    },
-                },
-                create: {
-                    fullName,
-                    email,
-                    phone,
-                    location,
-                    currentCompany:
-                        currentCompany || null,
-                    experience,
-                    portfolioUrl: portfolioUrl || null,
-                    applications: {
-                        create: applicationData,
-                    },
-                },
-                select: {
-                    id: true,
-
-                    applications: {
+        const application =
+            await prisma.$transaction(async (tx) => {
+                const candidateWithApplication =
+                    await tx.candidate.upsert({
                         where: {
-                            referenceId,
+                            email,
+                        },
+                        update: {
+                            fullName,
+                            phone,
+                            location,
+                            currentCompany:
+                                currentCompany || null,
+                            experience,
+                            portfolioUrl:
+                                portfolioUrl || null,
+                            applications: {
+                                create: applicationData,
+                            },
+                        },
+                        create: {
+                            fullName,
+                            email,
+                            phone,
+                            location,
+                            currentCompany:
+                                currentCompany || null,
+                            experience,
+                            portfolioUrl:
+                                portfolioUrl || null,
+                            applications: {
+                                create: applicationData,
+                            },
                         },
                         select: {
-                            referenceId: true,
-                            status: true,
-                            createdAt: true,
+                            id: true,
+
+                            applications: {
+                                where: {
+                                    referenceId,
+                                },
+                                select: {
+                                    referenceId: true,
+                                    status: true,
+                                    createdAt: true,
+                                },
+                                take: 1,
+                            },
                         },
-                        take: 1,
+                    });
+
+                const createdApplication =
+                    candidateWithApplication.applications[0];
+
+                if (!createdApplication) {
+                    throw new Error(
+                        "Application was not returned after creation.",
+                    );
+                }
+
+                const candidateDocument =
+                    await tx.candidateDocument.create({
+                        data: {
+                            type: "CV",
+                            source: "APPLICATION_UPLOAD",
+
+                            originalName: cvOriginalName,
+                            mimeType: resolvedCvMimeType,
+                            size: cvSize,
+
+                            storageKey:
+                                uploadedStorageKey,
+
+                            candidateId:
+                                candidateWithApplication.id,
+                        },
+                    });
+
+                await tx.cvParseJob.create({
+                    data: {
+                        candidateDocumentId:
+                            candidateDocument.id,
+
+                        status: "QUEUED",
                     },
-                },
+                });
+
+                return createdApplication;
             });
 
-        const application =
-            candidateWithApplication.applications[0];
-
-        if (!application) {
-            throw new Error(
-                "Application was not returned after creation.",
-            );
-        }
-        const candidateDocument =
-            await prisma.candidateDocument.create({
-                data: {
-                    type: "CV",
-                    source: "APPLICATION_UPLOAD",
-
-                    originalName: cvOriginalName,
-                    mimeType: resolvedCvMimeType,
-                    size: cvSize,
-
-                    storageKey: uploadedStorageKey,
-
-                    candidateId:
-                        candidateWithApplication.id,
-                },
-            });
-
-
-        await prisma.cvParseJob.create({
-            data: {
-                candidateDocumentId:
-                    candidateDocument.id,
-
-                status: "QUEUED",
-            },
-        });
         applicationSaved = true;
-
         return Response.json(
             {
                 message:
