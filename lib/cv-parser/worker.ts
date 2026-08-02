@@ -67,8 +67,32 @@ export async function processCvParseJob(
             );
 
 
-        await prisma.cvExtractedText.create({
-            data: {
+        await prisma.cvExtractedText.upsert({
+            where: {
+                parseJobId:
+                    parseJob.id,
+            },
+
+            update: {
+                extractedText:
+                    extracted.text,
+
+                extractionMethod:
+                    document.mimeType === "application/pdf"
+                        ? "PDF_PARSE"
+                        : "DOCX_MAMMOTH",
+
+                pageCount:
+                    "pageCount" in extracted &&
+                        typeof extracted.pageCount === "number"
+                        ? extracted.pageCount
+                        : null,
+
+                characterCount:
+                    extracted.text.length,
+            },
+
+            create: {
                 parseJobId:
                     parseJob.id,
 
@@ -101,9 +125,44 @@ export async function processCvParseJob(
             );
 
 
-        await prisma.cvParseResult.create({
-            data: {
+        await prisma.cvParseResult.upsert({
+            where: {
                 parseJobId: parseJob.id,
+            },
+            update: {
+                fullName:
+                    profile.fullName ?? null,
+
+                headline:
+                    profile.headline ?? null,
+
+                summary:
+                    profile.summary ?? null,
+
+                totalExperienceYears:
+                    profile.totalExperienceYears ?? null,
+
+                skills:
+                    profile.skills,
+
+                education:
+                    profile.education,
+
+                certifications:
+                    profile.certifications,
+
+                languages:
+                    profile.languages,
+
+                experience:
+                    profile.experience,
+
+                extractedKeywords:
+                    profile.extractedKeywords,
+            },
+            create: {
+                parseJobId:
+                    parseJob.id,
 
                 fullName:
                     profile.fullName ?? null,
@@ -128,6 +187,7 @@ export async function processCvParseJob(
 
                 languages:
                     profile.languages,
+
                 experience:
                     profile.experience,
 
