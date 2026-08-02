@@ -20,17 +20,22 @@ Required format:
 
 {
  "title":"",
- "summary":"Short description of the role and responsibilities",
+ "summary":"",
+ "responsibilities":[
+    ""
+ ],
  "requiredSkills":[
-    "Payroll",
-    "HRIS",
-    "Recruitment"
+    ""
+ ],
+ "preferredSkills":[
+    ""
  ],
  "requiredExperienceYears":0,
+ "seniority":"",
+ "domain":"",
  "educationRequirement":"",
  "keywords":[
-    "HR",
-    "Human Resources"
+    ""
  ]
 }
 
@@ -53,6 +58,27 @@ Every skill mentioned in responsibilities or requirements must appear in require
 - Ignore company marketing language.
 - Do not invent missing information.
 
+Extraction rules:
+
+responsibilities:
+- Extract actual duties and activities performed in the role.
+- Convert long sentences into concise responsibility statements.
+
+requiredSkills:
+- Extract mandatory skills required to perform the job.
+
+preferredSkills:
+- Extract optional or desirable skills.
+
+seniority:
+- Determine level such as:
+  Intern, Junior, Executive, Senior, Manager, Lead, Director.
+
+domain:
+- Identify professional domain:
+  HR, Finance, Engineering, Marketing, IT, etc.
+
+Do not invent information.
 
 JOB DESCRIPTION:
 

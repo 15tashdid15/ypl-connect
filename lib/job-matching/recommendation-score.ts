@@ -9,7 +9,9 @@ import {
     generateMatchReasons,
 } from "@/lib/candidate-search/matching";
 
-
+import {
+    calculateSeniorityMatch,
+} from "@/lib/candidate-search/seniority-matching";
 
 export function calculateRecommendationScore({
 
@@ -23,6 +25,10 @@ export function calculateRecommendationScore({
 
     requiredExperience,
 
+    candidateSeniority,
+
+    requiredSeniority,
+
 }: {
 
     similarity: number;
@@ -34,6 +40,9 @@ export function calculateRecommendationScore({
     candidateExperience: number | null;
 
     requiredExperience: number;
+    candidateSeniority?: string | null;
+
+    requiredSeniority?: string | null;
 
 }) {
 
@@ -57,7 +66,14 @@ export function calculateRecommendationScore({
             requiredExperience,
         );
 
+    const seniorityScore =
+        calculateSeniorityMatch({
 
+            candidateSeniority,
+
+            requiredSeniority,
+
+        });
 
     const finalScore =
         calculateHybridScore({
@@ -99,7 +115,7 @@ export function calculateRecommendationScore({
         skillScore,
 
         experienceScore,
-
+        seniorityScore,
         finalScore,
 
         reasons,

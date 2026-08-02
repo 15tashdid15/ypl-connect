@@ -53,6 +53,8 @@ export function buildCandidateSearchProfile({
 
     headline,
 
+    seniority,
+
     summary,
 
     skills,
@@ -70,6 +72,8 @@ export function buildCandidateSearchProfile({
     fullName?: string | null;
 
     headline?: string | null;
+
+    seniority?: string | null;
 
     summary?: string | null;
 
@@ -93,6 +97,7 @@ export function buildCandidateSearchProfile({
         headline,
 
         summary,
+        seniority,
 
         "Skills:",
 
@@ -143,6 +148,9 @@ export function buildCandidateSearchProfile({
         skills,
 
         keywords,
+
+        seniority:
+            seniority ?? null,
 
         totalExperienceYears:
             totalExperienceYears ?? null,

@@ -13,7 +13,8 @@ export function mapCandidateProfileForPersistence(
 
         headline:
             profile.headline ?? null,
-
+        seniority:
+            profile.seniority ?? null,
         summary:
             profile.summary ?? null,
 

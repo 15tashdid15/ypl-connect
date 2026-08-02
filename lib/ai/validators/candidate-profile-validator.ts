@@ -39,7 +39,7 @@ export const CandidateProfileSchema =
         headline:
             z.string()
                 .optional(),
-
+        seniority: z.string().nullable().optional(),
         summary:
             z.string()
                 .optional(),

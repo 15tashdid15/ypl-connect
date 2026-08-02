@@ -44,11 +44,13 @@ export class APIAIProvider
 
 
         return {
+            responsibilities: [],
 
             requiredSkills: [],
 
-            keywords: [],
+            preferredSkills: [],
 
+            keywords: [],
         };
 
     }

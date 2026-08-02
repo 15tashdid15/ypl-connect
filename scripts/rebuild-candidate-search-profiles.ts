@@ -87,6 +87,9 @@ async function main() {
                 headline:
                     parseResult.headline,
 
+                seniority:
+                    parseResult.seniority,
+
                 summary:
                     parseResult.summary,
 

@@ -269,7 +269,7 @@ model CvParseResult {
   fullName String? @db.VarChar(100)
 
   headline String? @db.VarChar(200)
-
+  seniority String? @db.VarChar(50)
   summary String? @db.Text
 
   totalExperienceYears Int?
@@ -309,8 +309,9 @@ model CandidateSearchProfile {
   keywords String[]
 
   totalExperienceYears Int?
-
+  
   highestEducation String? @db.VarChar(150)
+  seniority String? @db.VarChar(50)
   embedding        Json?
 
   lastUpdatedAt DateTime @default(now())
@@ -357,6 +358,7 @@ model JobSearchProfile {
   requiredSkills String[]
 
   requiredExperience Int?
+  seniority String? @db.VarChar(50)
 
   educationRequirement String? @db.VarChar(150)
 

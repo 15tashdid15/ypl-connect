@@ -51,7 +51,26 @@ Important rules:
 - Do not merge multiple jobs into one entry.
 
 - Extract professional skills, tools, technologies, and HR/business skills.
+- Determine candidate career level.
+- Return seniority based on experience and job titles.
+
+Use only:
+Junior
+Mid
+Senior
+Lead
+Manager
+Director
+
+Examples:
+0-2 years -> Junior
+3-5 years -> Mid
+5+ years -> Senior
+Leadership roles -> Manager/Director
+
+Do not guess if evidence is missing.
 - Do not include generic words unless they represent a real skill.
+
 
 Return ONLY valid JSON.
 
@@ -60,6 +79,7 @@ Required format:
 {
   "fullName": "",
   "headline": "",
+  "seniority": "",
   "summary": "",
   "totalExperienceYears": 0,
   "skills": [],
@@ -150,7 +170,8 @@ export class LocalAIProvider
 
             headline:
                 profile.headline ?? undefined,
-
+            seniority:
+                profile.seniority ?? undefined,
             summary:
                 profile.summary ?? undefined,
 

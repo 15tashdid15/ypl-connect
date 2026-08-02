@@ -100,6 +100,11 @@ export async function findRecommendedCandidates(
 
                 requiredExperience:
                     job.requiredExperience ?? 0,
+                candidateSeniority:
+                    candidate.seniority,
+
+                requiredSeniority:
+                    job.seniority,
 
             });
 

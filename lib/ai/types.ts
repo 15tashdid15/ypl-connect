@@ -18,6 +18,7 @@ export type AIExtractedCandidateProfile = {
     fullName?: string;
 
     headline?: string;
+    seniority?: string;
 
     summary?: string;
 

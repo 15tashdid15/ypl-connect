@@ -169,6 +169,8 @@ export async function processCvParseJob(
 
                 experience:
                     profile.experience,
+                seniority:
+                    profile.seniority,
 
             });
         const embedding =

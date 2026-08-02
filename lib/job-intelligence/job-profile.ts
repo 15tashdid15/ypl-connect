@@ -74,6 +74,8 @@ export function buildJobSearchProfile(
 
         requiredExperience:
             profile.requiredExperienceYears ?? null,
+        seniority:
+            profile.seniority ?? null,
 
 
         educationRequirement:
