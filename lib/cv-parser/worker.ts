@@ -145,6 +145,7 @@ export async function processCvParseJob(
         });
         const searchProfile =
             buildCandidateSearchProfile({
+
                 fullName:
                     profile.fullName,
 
@@ -165,6 +166,10 @@ export async function processCvParseJob(
 
                 totalExperienceYears:
                     profile.totalExperienceYears,
+
+                experience:
+                    profile.experience,
+
             });
         const embedding =
             await generateEmbedding(

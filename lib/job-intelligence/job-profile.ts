@@ -11,24 +11,38 @@ export function buildJobSearchProfile(
 
     const searchableText =
         [
+
             profile.title,
 
             profile.summary,
 
+            "Required Skills:",
+
             ...(profile.requiredSkills ?? []),
+
+
+            "Keywords:",
 
             ...(profile.keywords ?? []),
 
+
+            "Education Requirement:",
+
             profile.educationRequirement,
 
+
         ]
+
             .filter(Boolean)
+
             .join(" ")
+
             .toLowerCase();
 
 
 
     return {
+
 
         searchableText,
 
@@ -43,6 +57,7 @@ export function buildJobSearchProfile(
 
         educationRequirement:
             profile.educationRequirement ?? null,
+
 
     };
 

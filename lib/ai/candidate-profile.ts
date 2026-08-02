@@ -1,47 +1,137 @@
+import type {
+    AIExperienceItem,
+} from "./types";
 
+
+function buildExperienceText(
+    experience: AIExperienceItem[],
+) {
+
+    return experience
+        .flatMap((item) => [
+
+            item.role,
+
+            item.company,
+
+            ...(item.responsibilities ?? []),
+
+            ...(item.achievements ?? []),
+
+        ])
+        .filter(Boolean)
+        .join(" ");
+
+}
+
+
+function buildEducationText(
+    education: Record<string, unknown>[],
+) {
+
+    return education
+        .map((item) => {
+
+            return Object.values(item)
+                .filter(
+                    value =>
+                        typeof value === "string",
+                )
+                .join(" ");
+
+        })
+        .filter(Boolean)
+        .join(" ");
+
+}
 
 
 
 export function buildCandidateSearchProfile({
+
     fullName,
+
     headline,
+
     summary,
+
     skills,
+
     keywords,
+
     education,
+
     totalExperienceYears,
+
+    experience,
+
 }: {
+
     fullName?: string | null;
+
     headline?: string | null;
+
     summary?: string | null;
 
     skills: string[];
 
     keywords: string[];
 
-    education: any[];
+    education: Record<string, unknown>[];
 
     totalExperienceYears?: number | null;
+
+    experience: AIExperienceItem[];
 
 }) {
 
 
     const searchableText = [
+
         fullName,
+
         headline,
+
         summary,
+
+        "Skills:",
+
         ...skills,
+
+        "Keywords:",
+
         ...keywords,
+
+        "Experience:",
+
+        buildExperienceText(
+            experience,
+        ),
+
+        "Education:",
+
+        buildEducationText(
+            education,
+        ),
+
+        totalExperienceYears
+            ? `${totalExperienceYears} years experience`
+            : null,
+
     ]
+
         .filter(Boolean)
+
         .join(" ")
+
         .toLowerCase();
 
 
 
     const highestEducation =
-        education.length > 0
-            ? education[0]?.degree ?? null
+        education.length > 0 &&
+            typeof education[0]?.degree === "string"
+            ? education[0].degree
             : null;
 
 
