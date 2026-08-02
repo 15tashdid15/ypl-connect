@@ -14,11 +14,33 @@ export function buildJobSearchProfile(
 
             profile.title,
 
+
             profile.summary,
+
+
+            "Responsibilities:",
+
+            ...(profile.responsibilities ?? []),
+
 
             "Required Skills:",
 
             ...(profile.requiredSkills ?? []),
+
+
+            "Preferred Skills:",
+
+            ...(profile.preferredSkills ?? []),
+
+
+            "Domain:",
+
+            profile.domain,
+
+
+            "Seniority:",
+
+            profile.seniority,
 
 
             "Keywords:",
@@ -26,7 +48,7 @@ export function buildJobSearchProfile(
             ...(profile.keywords ?? []),
 
 
-            "Education Requirement:",
+            "Education:",
 
             profile.educationRequirement,
 
@@ -43,7 +65,6 @@ export function buildJobSearchProfile(
 
     return {
 
-
         searchableText,
 
 
@@ -57,7 +78,6 @@ export function buildJobSearchProfile(
 
         educationRequirement:
             profile.educationRequirement ?? null,
-
 
     };
 

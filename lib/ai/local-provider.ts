@@ -254,19 +254,44 @@ export class LocalAIProvider
             title:
                 profile.title ?? undefined,
 
+
             summary:
                 profile.summary ?? undefined,
+
+
+            responsibilities:
+                Array.isArray(profile.responsibilities)
+                    ? profile.responsibilities
+                    : [],
+
 
             requiredSkills:
                 Array.isArray(profile.requiredSkills)
                     ? profile.requiredSkills
                     : [],
 
+
+            preferredSkills:
+                Array.isArray(profile.preferredSkills)
+                    ? profile.preferredSkills
+                    : [],
+
+
             requiredExperienceYears:
                 profile.requiredExperienceYears ?? undefined,
 
+
+            seniority:
+                profile.seniority ?? undefined,
+
+
+            domain:
+                profile.domain ?? undefined,
+
+
             educationRequirement:
                 profile.educationRequirement ?? undefined,
+
 
             keywords:
                 Array.isArray(profile.keywords)

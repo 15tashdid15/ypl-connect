@@ -27,20 +27,46 @@ async function main() {
 
 Senior HR Executive
 
-ABC Limited is hiring a Senior HR Executive.
+ABC Limited is looking for a Senior HR Executive to manage
+human resource operations and employee lifecycle activities.
 
 Responsibilities:
-- Manage payroll operations.
-- Handle recruitment and talent acquisition.
-- Maintain HRIS records.
-- Manage employee relations.
+
+- Manage monthly payroll processing and employee benefits.
+- Handle recruitment, sourcing, interviewing and onboarding.
+- Maintain HRIS and employee records.
+- Manage employee relations and grievance handling.
+- Ensure compliance with Bangladesh Labour Law.
+- Prepare HR reports and workforce analytics.
+
+Required Skills:
+
+- Payroll Management
+- HRIS
+- Talent Acquisition
+- Employee Relations
+- Labor Law Compliance
+- HR Reporting
+
+Preferred Skills:
+
+- HR Analytics
+- Advanced Excel
+- Performance Management
 
 Requirements:
-- Bachelor's degree in HR or Business Administration.
-- Minimum 3 years experience.
-- Knowledge of Bangladesh Labour Law.
+
+- Bachelor's degree in HR, Business Administration or related field.
+- Minimum 3 years experience in HR operations.
+
+Seniority:
+Senior Executive
+
+Domain:
+Human Resources
 
 `;
+
 
 
 

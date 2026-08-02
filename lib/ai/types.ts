@@ -44,11 +44,27 @@ export type AIExtractedJobProfile = {
 
     summary?: string;
 
+
+    responsibilities: string[];
+
+
     requiredSkills: string[];
+
+
+    preferredSkills: string[];
+
 
     requiredExperienceYears?: number;
 
+
+    seniority?: string;
+
+
+    domain?: string;
+
+
     educationRequirement?: string;
+
 
     keywords: string[];
 
