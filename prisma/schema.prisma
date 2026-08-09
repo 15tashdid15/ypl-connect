@@ -26,19 +26,20 @@ enum ApplicationActivityType {
 }
 
 model Candidate {
-  id             String                  @id @default(cuid())
-  fullName       String                  @db.VarChar(100)
-  email          String                  @unique @db.VarChar(150)
-  phone          String                  @db.VarChar(30)
-  location       String                  @db.VarChar(100)
-  currentCompany String?                 @db.VarChar(150)
-  experience     String                  @db.VarChar(50)
-  portfolioUrl   String?                 @db.VarChar(300)
-  applications   Application[]
-  documents      CandidateDocument[]
-  searchProfile  CandidateSearchProfile?
-  createdAt      DateTime                @default(now())
-  updatedAt      DateTime                @updatedAt
+  id                        String                     @id @default(cuid())
+  fullName                  String                     @db.VarChar(100)
+  email                     String                     @unique @db.VarChar(150)
+  phone                     String                     @db.VarChar(30)
+  location                  String                     @db.VarChar(100)
+  currentCompany            String?                    @db.VarChar(150)
+  experience                String                     @db.VarChar(50)
+  portfolioUrl              String?                    @db.VarChar(300)
+  applications              Application[]
+  documents                 CandidateDocument[]
+  searchProfile             CandidateSearchProfile?
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+  recruiterCandidateActions RecruiterCandidateAction[]
 
   @@index([fullName])
   @@index([phone])
@@ -64,7 +65,8 @@ model Job {
 
   updatedAt DateTime @updatedAt
 
-  jobSearchProfile JobSearchProfile?
+  jobSearchProfile          JobSearchProfile?
+  recruiterCandidateActions RecruiterCandidateAction[]
 
   @@index([title])
   @@index([companyName])
@@ -268,9 +270,9 @@ model CvParseResult {
 
   fullName String? @db.VarChar(100)
 
-  headline String? @db.VarChar(200)
+  headline  String? @db.VarChar(200)
   seniority String? @db.VarChar(50)
-  summary String? @db.Text
+  summary   String? @db.Text
 
   totalExperienceYears Int?
 
@@ -309,9 +311,9 @@ model CandidateSearchProfile {
   keywords String[]
 
   totalExperienceYears Int?
-  
+
   highestEducation String? @db.VarChar(150)
-  seniority String? @db.VarChar(50)
+  seniority        String? @db.VarChar(50)
   embedding        Json?
 
   lastUpdatedAt DateTime @default(now())
@@ -358,7 +360,7 @@ model JobSearchProfile {
   requiredSkills String[]
 
   requiredExperience Int?
-  seniority String? @db.VarChar(50)
+  seniority          String? @db.VarChar(50)
 
   educationRequirement String? @db.VarChar(150)
 
@@ -371,6 +373,33 @@ model JobSearchProfile {
   @@unique([jobId])
   @@index([jobId])
   @@map("job_search_profiles")
+}
+
+model RecruiterCandidateAction {
+  id String @id @default(cuid())
+
+  jobId String
+
+  candidateId String
+
+  action String @db.VarChar(50)
+
+  note String? @db.Text
+
+  recruiterId String
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, candidateId, recruiterId])
+  @@index([jobId])
+  @@index([candidateId])
+  @@map("recruiter_candidate_actions")
 }
 
 enum CandidateDocumentType {

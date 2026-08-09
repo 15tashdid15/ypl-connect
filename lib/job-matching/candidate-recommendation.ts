@@ -1,10 +1,8 @@
 import prisma from "@/lib/prisma";
 
-
 import {
     findSemanticCandidates,
 } from "./semantic-match";
-
 
 import {
     calculateRecommendationScore,
@@ -17,11 +15,27 @@ export async function findRecommendedCandidates(
 ) {
 
 
+    if (!jobId) {
+
+        throw new Error(
+            "Job ID is required for candidate recommendation.",
+        );
+
+    }
+
+
+
     const job =
         await prisma.jobSearchProfile.findUnique({
 
             where: {
                 jobId,
+            },
+
+            include: {
+
+                job: true,
+
             },
 
         });
@@ -43,12 +57,16 @@ export async function findRecommendedCandidates(
             jobId,
         );
 
+
+
     const validCandidates =
         semanticCandidates.filter(
             (
                 item,
             ) => item !== null,
         );
+
+
 
     const results = [];
 
@@ -59,16 +77,21 @@ export async function findRecommendedCandidates(
     ) {
 
 
+
         const candidate =
             await prisma.candidateSearchProfile.findUnique({
 
                 where: {
+
                     candidateId:
                         item.candidateId,
+
                 },
 
                 include: {
+
                     candidate: true,
+
                 },
 
             });
@@ -83,30 +106,44 @@ export async function findRecommendedCandidates(
 
 
 
+
+
+
+
         const score =
             calculateRecommendationScore({
 
                 similarity:
                     item.similarity,
 
+
                 candidateSkills:
                     candidate.skills,
+
 
                 requiredSkills:
                     job.requiredSkills,
 
+
                 candidateExperience:
                     candidate.totalExperienceYears,
 
+
                 requiredExperience:
                     job.requiredExperience ?? 0,
+
+
                 candidateSeniority:
                     candidate.seniority,
+
 
                 requiredSeniority:
                     job.seniority,
 
             });
+
+
+
 
 
 
@@ -116,6 +153,9 @@ export async function findRecommendedCandidates(
                 candidate.candidateId,
 
 
+            applicationId: null,
+
+
             name:
                 candidate.candidate.fullName,
 
@@ -123,6 +163,7 @@ export async function findRecommendedCandidates(
             ...score,
 
         });
+
 
     }
 
