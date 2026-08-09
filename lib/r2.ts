@@ -76,7 +76,31 @@ export async function getCvObjectMetadata(
         }),
     );
 }
+export async function getCvObjectBuffer(
+    storageKey: string,
+) {
+    const response =
+        await getR2Client().send(
+            new GetObjectCommand({
+                Bucket: getR2BucketName(),
+                Key: storageKey,
+            }),
+        );
 
+
+    if (!response.Body) {
+        throw new Error(
+            "CV object body is empty.",
+        );
+    }
+
+
+    const byteArray =
+        await response.Body.transformToByteArray();
+
+
+    return Buffer.from(byteArray);
+}
 export async function deleteCvObject(
     storageKey: string,
 ) {
