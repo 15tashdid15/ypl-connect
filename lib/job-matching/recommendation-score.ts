@@ -84,8 +84,9 @@ export function calculateRecommendationScore({
 
             experienceScore,
 
-        });
+            seniorityScore,
 
+        });
 
 
     const reasons =

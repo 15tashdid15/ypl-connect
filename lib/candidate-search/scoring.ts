@@ -6,6 +6,8 @@ export function calculateHybridScore({
 
     experienceScore,
 
+    seniorityScore,
+
 }: {
 
     semanticScore: number;
@@ -14,26 +16,34 @@ export function calculateHybridScore({
 
     experienceScore: number;
 
+    seniorityScore?: number;
+
 }) {
 
 
     const finalScore =
 
         (
-            semanticScore * 0.50
+            semanticScore * 0.45
         )
 
         +
 
         (
-            skillScore * 0.30
+            skillScore * 0.25
         )
 
         +
 
         (
             experienceScore * 0.20
-        );
+        )
+
+        +
+
+        (
+            (seniorityScore ?? 50) * 0.10
+        )
 
 
     return Number(

@@ -134,8 +134,58 @@ but does not consider:
 
 Phase AI-1.5:
 
-Add seniority and career-level intelligence into:
+Implemented seniority and career-level intelligence into:
 
 - Candidate profile
 - Job profile
 - Recommendation scoring
+
+Validation of this improvement was performed in AI-1.6 benchmarking.
+
+# AI-1.6 Seniority Ranking Benchmark Results
+
+Date:
+2026-08-09
+
+## Objective
+
+Integrate candidate-job seniority compatibility into ranking.
+
+## Change
+
+Added seniorityScore into hybrid ranking.
+
+Previous:
+- Semantic 50%
+- Skill 30%
+- Experience 20%
+
+AI-1.6:
+- Semantic 45%
+- Skill 25%
+- Experience 20%
+- Seniority 10%
+
+## Results
+
+### Senior HR Executive
+
+Top-1:
+PASS
+
+Top candidate:
+Tanveer rahman Alif
+
+
+### Junior HR Assistant
+
+Top-1:
+PASS
+
+Top candidate:
+Rukaiya
+
+
+## Conclusion
+
+AI-1.6 successfully improved seniority-aware candidate ranking without regression.
