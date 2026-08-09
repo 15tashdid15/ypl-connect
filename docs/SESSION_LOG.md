@@ -67,3 +67,15 @@ Commit these continuity files, then begin Phase 0A: transactional application/do
 ### Remaining risks
 
 ### Exact next task
+
+## 2026-08-09
+
+Completed AI-1.6 seniority-aware ranking.
+
+Changes:
+- Added seniority score into recommendation ranking.
+- Validated benchmark improvement.
+- Created AI-1.6 benchmark documentation.
+
+Next:
+Evaluate next AI improvement opportunity.

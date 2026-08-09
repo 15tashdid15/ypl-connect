@@ -835,3 +835,19 @@ and define correct R2 cleanup behaviour for:
 - database commit followed by response failure;
 - orphan-object reconciliation.
 
+## AI-1.6 Seniority Ranking Completed
+
+Date:
+2026-08-09
+
+Implemented:
+- Added seniority compatibility scoring.
+- Integrated seniorityScore into hybrid ranking.
+- Updated ranking weights.
+
+Benchmark:
+- Senior HR Executive: PASS
+- Junior HR Assistant: PASS
+
+Result:
+Resolved overqualification ranking issue identified in AI-1.4.
