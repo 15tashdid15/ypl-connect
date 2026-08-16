@@ -5,6 +5,7 @@ import {
 
 export async function getCandidateRecommendations(
     jobId: string,
+    recruiterId: string,
 ) {
 
     if (!jobId) {
@@ -19,6 +20,7 @@ export async function getCandidateRecommendations(
     const recommendations =
         await findRecommendedCandidates(
             jobId,
+            recruiterId,
         );
 
 

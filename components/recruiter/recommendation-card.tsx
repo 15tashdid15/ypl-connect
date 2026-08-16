@@ -5,8 +5,8 @@ type RecommendationCardProps = {
     jobId: string;
     candidate: {
         candidateId: string;
-
         applicationId: string | null;
+        currentAction: string | null;
         name: string;
 
         finalScore: number;
@@ -113,6 +113,26 @@ export default function RecommendationCard({
                             {candidate.name}
 
                         </h3>
+                        {
+                            candidate.currentAction === "SHORTLIST" && (
+
+                                <span className="mt-2 inline-block rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                                    Shortlisted
+                                </span>
+
+                            )
+                        }
+
+
+                        {
+                            candidate.currentAction === "REJECT" && (
+
+                                <span className="mt-2 inline-block rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
+                                    Rejected
+                                </span>
+
+                            )
+                        }
 
 
                     </div>

@@ -18,15 +18,21 @@ export default async function RecommendationPage({
 }) {
 
 
-    await requireRecruiter();
+    const session =
+        await requireRecruiter();
 
 
     const { id } = await params;
 
 
+    const recruiterId =
+        session.user.id;
+
+
     const recommendations =
         await getCandidateRecommendations(
             id,
+            recruiterId,
         );
 
 

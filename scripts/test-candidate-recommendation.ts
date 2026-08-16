@@ -34,6 +34,7 @@ async function main() {
     const results =
         await findRecommendedCandidates(
             job.id,
+            "test-recruiter",
         );
 
 

@@ -12,6 +12,7 @@ import {
 
 export async function findRecommendedCandidates(
     jobId: string,
+    recruiterId: string,
 ) {
 
 
@@ -107,7 +108,25 @@ export async function findRecommendedCandidates(
 
 
 
+        const recruiterAction =
+            await prisma.recruiterCandidateAction.findUnique({
 
+                where: {
+
+                    jobId_candidateId_recruiterId: {
+
+                        jobId,
+
+                        candidateId:
+                            candidate.candidateId,
+
+                        recruiterId,
+
+                    },
+
+                },
+
+            });
 
 
         const score =
@@ -153,11 +172,16 @@ export async function findRecommendedCandidates(
                 candidate.candidateId,
 
 
-            applicationId: null,
+            applicationId:
+                null,
 
 
             name:
                 candidate.candidate.fullName,
+
+
+            currentAction:
+                recruiterAction?.action ?? null,
 
 
             ...score,

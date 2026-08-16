@@ -156,6 +156,7 @@ async function runBenchmark() {
         const results =
             await findRecommendedCandidates(
                 job.id,
+                "benchmark-recruiter",
             );
 
 
