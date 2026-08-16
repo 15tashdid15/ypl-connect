@@ -8,8 +8,9 @@ import {
 
 type RecommendationActionsProps = {
 
-    applicationId:
-    string | null;
+    jobId: string;
+
+    candidateId: string;
 
 };
 
@@ -17,7 +18,8 @@ type RecommendationActionsProps = {
 
 export default function RecommendationActions({
 
-    applicationId,
+    jobId,
+    candidateId,
 
 }: RecommendationActionsProps) {
 
@@ -31,94 +33,60 @@ export default function RecommendationActions({
 
 
 
-    async function updateStatus(
-        status: string,
+    async function saveAction(
+        action: string,
     ) {
 
-
-        if (!applicationId) {
-
-            setMessage(
-                "No application found for this candidate.",
-            );
-
-            return;
-
-        }
-
-
-
         setLoading(true);
-
         setMessage("");
-
-
 
         try {
 
-
             const response =
                 await fetch(
-
-                    `/api/recruiter/applications/${applicationId}/status`,
-
+                    `/api/recruiter/jobs/${jobId}/candidates/${candidateId}/action`,
                     {
-
-                        method: "PATCH",
-
+                        method: "POST",
 
                         headers: {
-
                             "Content-Type":
                                 "application/json",
-
                         },
 
-
                         body: JSON.stringify({
-
-                            status,
-
+                            action,
                         }),
-
                     },
-
                 );
-
 
 
             const data =
                 await response.json();
 
 
-
             if (!response.ok) {
 
                 throw new Error(
                     data.message ||
-                    "Status update failed.",
+                    "Action failed.",
                 );
 
             }
 
 
-
             setMessage(
                 data.message ||
-                "Status updated successfully.",
+                "Candidate action saved.",
             );
-
 
 
         } catch (error) {
 
 
             setMessage(
-
                 error instanceof Error
                     ? error.message
                     : "Something went wrong.",
-
             );
 
 
@@ -141,12 +109,13 @@ export default function RecommendationActions({
 
                 disabled={
                     loading ||
-                    !applicationId
+                    !jobId ||
+                    !candidateId
                 }
 
                 onClick={() =>
-                    updateStatus(
-                        "SHORTLISTED",
+                    saveAction(
+                        "SHORTLIST",
                     )
                 }
 
@@ -169,12 +138,13 @@ export default function RecommendationActions({
 
                 disabled={
                     loading ||
-                    !applicationId
+                    !jobId ||
+                    !candidateId
                 }
 
                 onClick={() =>
-                    updateStatus(
-                        "REJECTED",
+                    saveAction(
+                        "REJECT",
                     )
                 }
 

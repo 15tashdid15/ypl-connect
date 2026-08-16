@@ -977,3 +977,24 @@ Planned:
 - Display recruiter decision status
 - Update recommendation cards based on recruiter actions
 - Create next stable checkpoint
+# AI-1.7-S4.3 — Connect Recommendation Actions UI with API
+
+Status:
+Completed
+
+Completed:
+- Connected recommendation UI with recruiter action API
+- Replaced application status workflow with recruiter decision workflow
+- Passed jobId and candidateId through recommendation components
+- Integrated shortlist/reject actions with backend API
+- Verified successful API communication
+- Verified database persistence using Prisma Studio
+
+Testing:
+- Shortlist action tested successfully
+- API POST request verified
+- API response verified
+- RecruiterCandidateAction database record confirmed
+
+Next:
+AI-1.7-S4.4 — Display recruiter decision status

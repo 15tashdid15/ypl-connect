@@ -119,24 +119,10 @@ export default async function RecommendationPage({
 
 
                                     <RecommendationCard
-
-                                        key={
-                                            candidate.candidateId
-                                        }
-
-
-                                        candidate={{
-                                            ...candidate,
-
-                                            reasons:
-                                                candidate.reasons ?? [],
-                                        }}
-
-
-                                        rank={
-                                            index + 1
-                                        }
-
+                                        key={candidate.candidateId}
+                                        jobId={id}
+                                        candidate={candidate}
+                                        rank={index + 1}
                                     />
 
 

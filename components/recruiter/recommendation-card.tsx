@@ -1,6 +1,8 @@
 import RecommendationActions from "./recommendation-actions";
 
 type RecommendationCardProps = {
+
+    jobId: string;
     candidate: {
         candidateId: string;
 
@@ -75,6 +77,8 @@ function ScoreBox({
 
 
 export default function RecommendationCard({
+
+    jobId,
 
     candidate,
 
@@ -221,9 +225,15 @@ export default function RecommendationCard({
 
 
             <RecommendationActions
-                applicationId={
-                    candidate.applicationId
+
+                jobId={
+                    jobId
                 }
+
+                candidateId={
+                    candidate.candidateId
+                }
+
             />
 
 
