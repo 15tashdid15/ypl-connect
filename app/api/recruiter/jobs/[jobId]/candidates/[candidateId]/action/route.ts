@@ -27,8 +27,10 @@ export async function POST(
     context: RouteContext,
 ) {
 
+
     const session =
         await getRecruiterSession(request);
+
 
 
     if (!session) {
@@ -44,6 +46,7 @@ export async function POST(
         );
 
     }
+
 
 
     const {
@@ -62,7 +65,9 @@ export async function POST(
         body =
             (await request.json()) as ActionRequestBody;
 
+
     } catch {
+
 
         return Response.json(
             {
@@ -82,6 +87,7 @@ export async function POST(
         typeof body.action !== "string" ||
         body.action.trim() === ""
     ) {
+
 
         return Response.json(
             {
@@ -104,6 +110,26 @@ export async function POST(
 
 
 
+    if (
+        action !== "SHORTLIST" &&
+        action !== "REJECT"
+    ) {
+
+
+        return Response.json(
+            {
+                message:
+                    "Invalid action.",
+            },
+            {
+                status: 400,
+            },
+        );
+
+    }
+
+
+
     const note =
         typeof body.note === "string"
             ? body.note.trim()
@@ -115,6 +141,7 @@ export async function POST(
         note &&
         note.length > 2000
     ) {
+
 
         return Response.json(
             {
@@ -132,6 +159,39 @@ export async function POST(
 
     const recruiterId =
         session.user.id;
+
+
+
+    const job =
+        await prisma.job.findUnique({
+
+            where: {
+                id: jobId,
+            },
+
+            select: {
+
+                title: true,
+
+            },
+
+        });
+
+
+
+    if (!job) {
+
+        return Response.json(
+            {
+                message:
+                    "Job not found.",
+            },
+            {
+                status: 404,
+            },
+        );
+
+    }
 
 
 
@@ -162,13 +222,18 @@ export async function POST(
             ? await prisma.recruiterCandidateAction.update({
 
                 where: {
+
                     id:
                         existingAction.id,
+
                 },
 
                 data: {
+
                     action,
+
                     note,
+
                 },
 
             })
@@ -194,9 +259,75 @@ export async function POST(
 
 
 
+    const applicationStatus =
+        action === "SHORTLIST"
+            ? "SHORTLISTED"
+            : "REJECTED";
+
+
+    console.log("DEBUG APPLICATION MATCH");
+
+    console.log({
+        candidateId,
+        jobId,
+        jobTitleFromJobTable: job.title,
+    });
+    const existingApplications =
+        await prisma.application.findMany({
+
+            where: {
+                candidateId,
+            },
+
+            select: {
+                id: true,
+                jobTitle: true,
+                jobSlug: true,
+                status: true,
+            },
+
+        });
+
+
+    console.log(
+        "CANDIDATE APPLICATIONS:",
+        existingApplications,
+    );
+
+    if (applicationStatus && job) {
+
+        const updatedApplications =
+            await prisma.application.updateMany({
+
+                where: {
+
+                    candidateId,
+
+                    jobTitle: job.title,
+
+                },
+
+                data: {
+
+                    status: applicationStatus,
+
+                },
+
+            });
+
+
+        console.log(
+            "APPLICATION UPDATE RESULT",
+            updatedApplications.count,
+        );
+
+    }
+
+
     revalidatePath(
         `/recruiter/jobs/${jobId}/recommendations`,
     );
+
 
 
     return Response.json({

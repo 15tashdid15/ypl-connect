@@ -7,24 +7,6 @@ datasource db {
   provider = "postgresql"
 }
 
-enum ApplicationStatus {
-  APPLIED
-  SHORTLISTED
-  SUBMITTED
-  INTERVIEW_SCHEDULED
-  INTERVIEW_COMPLETED
-  SELECTED
-  OFFER_SENT
-  JOINED
-  REJECTED
-  ARCHIVED
-}
-
-enum ApplicationActivityType {
-  STATUS_CHANGE
-  NOTE
-}
-
 model Candidate {
   id                        String                     @id @default(cuid())
   fullName                  String                     @db.VarChar(100)
@@ -34,11 +16,11 @@ model Candidate {
   currentCompany            String?                    @db.VarChar(150)
   experience                String                     @db.VarChar(50)
   portfolioUrl              String?                    @db.VarChar(300)
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
   applications              Application[]
   documents                 CandidateDocument[]
   searchProfile             CandidateSearchProfile?
-  createdAt                 DateTime                   @default(now())
-  updatedAt                 DateTime                   @updatedAt
   recruiterCandidateActions RecruiterCandidateAction[]
 
   @@index([fullName])
@@ -47,24 +29,15 @@ model Candidate {
 }
 
 model Job {
-  id String @id @default(cuid())
-
-  title String @db.VarChar(200)
-
-  description String @db.Text
-
-  companyName String @db.VarChar(200)
-
-  location String? @db.VarChar(150)
-
-  employmentType String? @db.VarChar(50)
-
-  experienceRequired Int?
-
-  createdAt DateTime @default(now())
-
-  updatedAt DateTime @updatedAt
-
+  id                        String                     @id @default(cuid())
+  title                     String                     @db.VarChar(200)
+  description               String
+  companyName               String                     @db.VarChar(200)
+  location                  String?                    @db.VarChar(150)
+  employmentType            String?                    @db.VarChar(50)
+  experienceRequired        Int?
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
   jobSearchProfile          JobSearchProfile?
   recruiterCandidateActions RecruiterCandidateAction[]
 
@@ -78,7 +51,7 @@ model Application {
   referenceId    String                @unique @db.VarChar(40)
   jobSlug        String                @db.VarChar(160)
   jobTitle       String                @db.VarChar(200)
-  coverLetter    String?               @db.Text
+  coverLetter    String?
   status         ApplicationStatus     @default(APPLIED)
   cvOriginalName String                @db.VarChar(255)
   cvMimeType     String                @db.VarChar(150)
@@ -86,10 +59,10 @@ model Application {
   cvStorageKey   String?               @db.VarChar(500)
   consentAt      DateTime
   candidateId    String
-  candidate      Candidate             @relation(fields: [candidateId], references: [id], onDelete: Restrict)
-  activities     ApplicationActivity[]
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
+  activities     ApplicationActivity[]
+  candidate      Candidate             @relation(fields: [candidateId], references: [id])
 
   @@unique([candidateId, jobSlug])
   @@index([status])
@@ -106,9 +79,9 @@ model User {
   image                 String?               @db.VarChar(500)
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @updatedAt
-  sessions              Session[]
   accounts              Account[]
   applicationActivities ApplicationActivity[]
+  sessions              Session[]
 
   @@map("user")
 }
@@ -120,7 +93,7 @@ model Session {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   ipAddress String?  @db.VarChar(100)
-  userAgent String?  @db.Text
+  userAgent String?
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -134,16 +107,16 @@ model Account {
   accountId             String    @db.VarChar(255)
   providerId            String    @db.VarChar(100)
   userId                String
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accessToken           String?   @db.Text
-  refreshToken          String?   @db.Text
-  idToken               String?   @db.Text
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
   accessTokenExpiresAt  DateTime?
   refreshTokenExpiresAt DateTime?
-  scope                 String?   @db.Text
-  password              String?   @db.Text
+  scope                 String?
+  password              String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([providerId, accountId])
   @@index([userId])
@@ -153,7 +126,7 @@ model Account {
 model Verification {
   id         String   @id
   identifier String   @db.VarChar(255)
-  value      String   @db.Text
+  value      String
   expiresAt  DateTime
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -166,20 +139,16 @@ model Verification {
 model ApplicationActivity {
   id             String                  @id @default(cuid())
   type           ApplicationActivityType
-  message        String?                 @db.Text
+  message        String?
   previousStatus ApplicationStatus?
   newStatus      ApplicationStatus?
-
-  applicationId String
-  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-
-  recruiterId String
-  recruiter   User   @relation(fields: [recruiterId], references: [id], onDelete: Restrict)
-
-  recruiterName  String @db.VarChar(100)
-  recruiterEmail String @db.VarChar(150)
-
-  createdAt DateTime @default(now())
+  applicationId  String
+  recruiterId    String
+  recruiterName  String                  @db.VarChar(100)
+  recruiterEmail String                  @db.VarChar(150)
+  createdAt      DateTime                @default(now())
+  application    Application             @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  recruiter      User                    @relation(fields: [recruiterId], references: [id])
 
   @@index([applicationId, createdAt])
   @@index([recruiterId, createdAt])
@@ -188,27 +157,21 @@ model ApplicationActivity {
 }
 
 model CandidateDocument {
-  id String @id @default(cuid())
-
-  type   CandidateDocumentType   @default(CV)
-  source CandidateDocumentSource
-
-  originalName String @db.VarChar(255)
-  mimeType     String @db.VarChar(150)
-  size         Int
-
-  storageKey     String  @db.VarChar(500)
-  objectETag     String? @db.VarChar(255)
-  checksumSha256 String? @db.VarChar(64)
-
-  candidateId String
-  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-
-  parseJobs CvParseJob[]
-
-  uploadedAt DateTime @default(now())
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id             String                  @id @default(cuid())
+  type           CandidateDocumentType   @default(CV)
+  source         CandidateDocumentSource
+  originalName   String                  @db.VarChar(255)
+  mimeType       String                  @db.VarChar(150)
+  size           Int
+  storageKey     String                  @db.VarChar(500)
+  objectETag     String?                 @db.VarChar(255)
+  checksumSha256 String?                 @db.VarChar(64)
+  candidateId    String
+  uploadedAt     DateTime                @default(now())
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  candidate      Candidate               @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  parseJobs      CvParseJob[]
 
   @@index([candidateId])
   @@index([storageKey])
@@ -217,23 +180,18 @@ model CandidateDocument {
 }
 
 model CvParseJob {
-  id String @id @default(cuid())
-
-  status CvParseJobStatus @default(QUEUED)
-
+  id                  String            @id @default(cuid())
+  status              CvParseJobStatus  @default(QUEUED)
   candidateDocumentId String
+  attemptCount        Int               @default(0)
+  startedAt           DateTime?
+  completedAt         DateTime?
+  errorMessage        String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  extractedText       CvExtractedText?
   candidateDocument   CandidateDocument @relation(fields: [candidateDocumentId], references: [id], onDelete: Cascade)
   result              CvParseResult?
-  extractedText       CvExtractedText?
-  attemptCount        Int               @default(0)
-
-  startedAt   DateTime?
-  completedAt DateTime?
-
-  errorMessage String? @db.Text
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   @@index([candidateDocumentId])
   @@index([status])
@@ -242,164 +200,128 @@ model CvParseJob {
 }
 
 model CvExtractedText {
-  id String @id @default(cuid())
+  id               String     @id @default(cuid())
+  parseJobId       String     @unique
+  extractedText    String
+  extractionMethod String     @db.VarChar(50)
+  pageCount        Int?
+  characterCount   Int
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  parseJob         CvParseJob @relation(fields: [parseJobId], references: [id], onDelete: Cascade)
 
-  parseJobId String
-  parseJob   CvParseJob @relation(fields: [parseJobId], references: [id], onDelete: Cascade)
-
-  extractedText String @db.Text
-
-  extractionMethod String @db.VarChar(50)
-
-  pageCount      Int?
-  characterCount Int
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([parseJobId])
   @@index([characterCount])
   @@map("cv_extracted_texts")
 }
 
 model CvParseResult {
-  id String @id @default(cuid())
-
-  parseJobId String
-  parseJob   CvParseJob @relation(fields: [parseJobId], references: [id], onDelete: Cascade)
-
-  fullName String? @db.VarChar(100)
-
-  headline  String? @db.VarChar(200)
-  seniority String? @db.VarChar(50)
-  summary   String? @db.Text
-
+  id                   String         @id @default(cuid())
+  parseJobId           String         @unique
+  fullName             String?        @db.VarChar(100)
+  headline             String?        @db.VarChar(200)
+  summary              String?
   totalExperienceYears Int?
+  skills               Json?
+  education            Json?
+  certifications       Json?
+  languages            Json?
+  extractedKeywords    Json?
+  reviewStatus         CvReviewStatus @default(UNREVIEWED)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  experience           Json?
+  seniority            String?        @db.VarChar(50)
+  parseJob             CvParseJob     @relation(fields: [parseJobId], references: [id], onDelete: Cascade)
 
-  skills Json?
-
-  education Json?
-
-  certifications Json?
-
-  languages Json?
-
-  extractedKeywords Json?
-
-  experience Json?
-
-  reviewStatus CvReviewStatus @default(UNREVIEWED)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([parseJobId])
   @@index([reviewStatus])
   @@map("cv_parse_results")
 }
 
 model CandidateSearchProfile {
-  id String @id @default(cuid())
-
-  candidateId String
-  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-
-  searchableText String @db.Text
-
-  skills String[]
-
-  keywords String[]
-
+  id                   String    @id @default(cuid())
+  candidateId          String    @unique
+  searchableText       String
+  skills               String[]
+  keywords             String[]
   totalExperienceYears Int?
+  highestEducation     String?   @db.VarChar(150)
+  lastUpdatedAt        DateTime  @default(now())
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  embedding            Json?
+  seniority            String?   @db.VarChar(50)
+  candidate            Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
 
-  highestEducation String? @db.VarChar(150)
-  seniority        String? @db.VarChar(50)
-  embedding        Json?
-
-  lastUpdatedAt DateTime @default(now())
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([candidateId])
   @@index([candidateId])
   @@index([totalExperienceYears])
   @@map("candidate_search_profiles")
 }
 
 model AIConfiguration {
-  id String @id @default(cuid())
-
-  provider AIProvider @default(LOCAL)
-
-  fallbackEnabled Boolean @default(false)
-
-  fallbackProvider AIProvider?
-
-  confidenceThreshold Int @default(80)
-
-  dailyTokenLimit Int?
-
-  monthlyTokenLimit Int?
-
-  createdAt DateTime @default(now())
-
-  updatedAt DateTime @updatedAt
+  id                  String      @id @default(cuid())
+  provider            AIProvider  @default(LOCAL)
+  fallbackEnabled     Boolean     @default(false)
+  fallbackProvider    AIProvider?
+  confidenceThreshold Int         @default(80)
+  dailyTokenLimit     Int?
+  monthlyTokenLimit   Int?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
 
   @@map("ai_configuration")
 }
 
 model JobSearchProfile {
-  id String @id @default(cuid())
+  id                   String   @id @default(cuid())
+  jobId                String   @unique
+  searchableText       String
+  requiredSkills       String[]
+  requiredExperience   Int?
+  educationRequirement String?  @db.VarChar(150)
+  embedding            Json?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  seniority            String?  @db.VarChar(50)
+  job                  Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
-  jobId String
-  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
-
-  searchableText String @db.Text
-
-  requiredSkills String[]
-
-  requiredExperience Int?
-  seniority          String? @db.VarChar(50)
-
-  educationRequirement String? @db.VarChar(150)
-
-  embedding Json?
-
-  createdAt DateTime @default(now())
-
-  updatedAt DateTime @updatedAt
-
-  @@unique([jobId])
   @@index([jobId])
   @@map("job_search_profiles")
 }
 
 model RecruiterCandidateAction {
-  id String @id @default(cuid())
-
-  jobId String
-
+  id          String    @id @default(cuid())
+  jobId       String
   candidateId String
-
-  action String @db.VarChar(50)
-
-  note String? @db.Text
-
+  action      String    @db.VarChar(50)
+  note        String?
   recruiterId String
-
-  createdAt DateTime @default(now())
-
-  updatedAt DateTime @updatedAt
-
-  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
-
-  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  job         Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@unique([jobId, candidateId, recruiterId])
   @@index([jobId])
   @@index([candidateId])
   @@map("recruiter_candidate_actions")
+}
+
+enum ApplicationStatus {
+  APPLIED
+  SHORTLISTED
+  SUBMITTED
+  INTERVIEW_SCHEDULED
+  INTERVIEW_COMPLETED
+  SELECTED
+  OFFER_SENT
+  JOINED
+  REJECTED
+  ARCHIVED
+}
+
+enum ApplicationActivityType {
+  STATUS_CHANGE
+  NOTE
 }
 
 enum CandidateDocumentType {

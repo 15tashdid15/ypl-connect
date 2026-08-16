@@ -68,13 +68,63 @@ export async function findRecommendedCandidates(
         );
 
 
+    const applications =
+        await prisma.application.findMany({
+
+            where: {
+
+                OR: [
+
+                    {
+                        jobTitle:
+                            job.job.title,
+                    },
+
+                    {
+                        jobSlug:
+                            job.job.title
+                                .toLowerCase()
+                                .replace(/\s+/g, "-"),
+                    },
+
+                ],
+
+            },
+
+            select: {
+
+                candidateId: true,
+
+            },
+
+        });
+
+
+    const appliedCandidateIds =
+        new Set(
+            applications.map(
+                (application) =>
+                    application.candidateId,
+            ),
+        );
+
+
+    const filteredCandidates =
+        validCandidates.filter(
+            (item) =>
+                appliedCandidateIds.has(
+                    item.candidateId,
+                ),
+        );
+
+
 
     const results = [];
 
 
 
     for (
-        const item of validCandidates
+        const item of filteredCandidates
     ) {
 
 
