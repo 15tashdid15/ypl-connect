@@ -43,3 +43,5 @@ next-env.d.ts
 
 # Generated Prisma Client
 /app/generated/prisma/
+
+structure.txt
