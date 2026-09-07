@@ -205,7 +205,7 @@ export class LocalAIProvider
 
             experience:
                 Array.isArray(profile.experience)
-                    ? profile.experience.map((item: any) => ({
+                    ? profile.experience.map((item) => ({
 
                         company:
                             item.company ?? "",

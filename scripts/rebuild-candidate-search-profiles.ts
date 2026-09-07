@@ -9,7 +9,9 @@ import {
 import {
     generateEmbedding,
 } from "@/lib/ai/embedding-provider";
-
+import type {
+    AIExperienceItem,
+} from "@/lib/ai/types";
 
 async function main() {
 
@@ -113,7 +115,7 @@ async function main() {
 
                 experience:
                     Array.isArray(parseResult.experience)
-                        ? parseResult.experience as any
+                        ? parseResult.experience as AIExperienceItem[]
                         : [],
 
             });

@@ -1,0 +1,22 @@
+# YPL Connect Executed Test Register
+
+Test date: 6 September 2026  
+Environment: Local development, Next.js, PostgreSQL, Prisma, Ollama and Cloudflare R2  
+Repository commit: cd88b7b2c82466319f226dc9cd3a8291855042f6
+
+| ID | Test | Expected result | Actual result | Status | Evidence |
+|---|---|---|---|---|---|
+| TC-01 | Valid PDF parsing | PDF text and structured profile are created | PDF application processed successfully; `PDF_PARSE`, 889 characters, structured profile and candidate search profile created | PASS | `TC-01-01-pdf-application-form.png` through `TC-01-08-candidate-search-profile.png`; `TC-01-pdf-worker.txt` |
+| TC-02 | Valid DOCX parsing, full workflow | DOCX is uploaded and processed | Browser upload blocked by Cloudflare R2 `403 NotEntitled` | BLOCKED | `TC-02-01-docx-application-form.png`; `TC-02-03-r2-not-entitled.png` |
+| TC-02A | Isolated DOCX parser test | DOCX text and validated profile are created | `DOCX_MAMMOTH` succeeded; 988 characters extracted; AI profile validation succeeded | PASS | `TC-02-02-docx-local-parser-success_PART-1.png`; `TC-02-02-docx-local-parser-success_PART-2.png`; `TC-02-02-docx-local-parser-success_PART-3.png`; `TC-02-docx-local-parser.txt` |
+| TC-03 | Unsupported-file rejection | Unsupported file is rejected | `.txt` file rejected with understandable error; API returned HTTP `400` | PASS | `TC-03-01-unsupported-file-rejected.png` |
+| TC-04 | Oversized-file validation | File larger than 5 MB is rejected | 6 MB PDF rejected with “The CV must not exceed 5 MB”; API returned HTTP `400` | PASS | `TC-04-01-oversized-file-rejected.png` |
+| TC-05 | Required-field validation | Form prevents submission when a required field is empty | Chrome displayed “Please fill out this field”; no CV upload was initiated | PASS | `TC-05-01-required-field-validation.png` |
+| TC-06 | Candidate-profile generation | Known skills and experience appear in the structured profile | Local validated profile contained HRIS, Payroll Management, Talent Acquisition, Senior level and 4 years of experience | PASS | `TC-02-02-docx-local-parser-success_PART-2.png`; `TC-02-02-docx-local-parser-success_PART-3.png` |
+| TC-07 | Candidate recommendation | Candidates are ranked using four matching components | Recommendation page ranked Test Candidate 01 at 92.99% and displayed semantic, skills, experience, seniority and explainable matching reasons | PASS | `TC-07-01-synthetic-application-fixture.png`; `TC-07-02-recommendation-result.png` |
+| TC-08 | Weighted-score verification | Weighted component total equals the displayed 85.72% | Calculation produced 85.717, which rounds to 85.72%, matching the recommendation page | PASS | `TC-07-02-recommendation-result.png`; `TC-08-01-weighted-score-verification.png`; `TC-08-score-verification.txt` |
+| TC-09 | Missing job profile | System reports the missing profile and does not fabricate recommendations | A synthetic job without a JobSearchProfile produced “Job profile not found”; no candidates or scores were generated | PASS | `TC-09-01-missing-job-profile-error.png` | 
+| TC-10 | Recruiter shortlist action | Shortlist action is saved and application status changes | Test Candidate 01 displayed a persistent Shortlisted badge; recruiter action was stored as SHORTLIST and application status changed to SHORTLISTED | PASS | `TC-07-02-recommendation-result.png`; `TC-10-01-shortlist-action-saved.png`; `TC-10-02-shortlist-persisted.png`; `TC-10-03-shortlist-database-status.png` |
+| TC-11 | Recruiter reject action | Reject action is saved and application status changes | Test Candidate 02 displayed a persistent Rejected badge; recruiter action was stored as REJECT and application status changed to REJECTED | PASS | `TC-11-01-reject-action-saved.png`; `TC-11-02-reject-persisted.png`; `TC-11-03-reject-database-status.png`; `TC-11-synthetic-candidate-fixture.txt` |
+| TC-12 | Recruiter access protection | Signed-out user is redirected | Dashboard request returned `307` and redirected to recruiter sign-in | PASS | `SS-12-recruiter-access-protection.png` |
+TC-09 limitation: Missing-profile detection works, but the development interface displays a runtime error instead of a user-friendly error page.

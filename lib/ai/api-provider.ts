@@ -17,7 +17,7 @@ export class APIAIProvider
         text: string,
     ): Promise<AIExtractedCandidateProfile> {
 
-
+        void text;
         return {
 
             skills: [],
@@ -42,7 +42,7 @@ export class APIAIProvider
         text: string,
     ): Promise<AIExtractedJobProfile> {
 
-
+        void text;
         return {
             responsibilities: [],
 

@@ -1,0 +1,40 @@
+
+File                                                       Bytes
+----                                                       -----
+EVIDENCE-INVENTORY.txt                                      2252
+logs\environment.txt                                         171
+logs\TC-01-pdf-worker.txt                                    182
+logs\TC-02-docx-local-parser.txt                            4444
+logs\TC-08-score-verification.txt                            500
+logs\TC-11-synthetic-candidate-fixture.txt                   406
+screenshots\SS-12-recruiter-access-protection.png         158516
+screenshots\TC-01-01-pdf-application-form.png              54873
+screenshots\TC-01-02-pdf-submission-success.png            62534
+screenshots\TC-01-03-pdf-job-queued.png                    67095
+screenshots\TC-01-04-pdf-worker-success.png                19296
+screenshots\TC-01-05-pdf-parse-succeeded.png               61097
+screenshots\TC-01-06-pdf-extraction-metadata.png           47756
+screenshots\TC-01-07-structured-candidate-profile.png      45536
+screenshots\TC-01-08-candidate-search-profile.png          48600
+screenshots\TC-02-01-docx-application-form.png             44965
+screenshots\TC-02-02-docx-local-parser-success_PART-1.png  43671
+screenshots\TC-02-02-docx-local-parser-success_PART-2.png  64707
+screenshots\TC-02-02-docx-local-parser-success_PART-3.png  51486
+screenshots\TC-02-03-r2-not-entitled.png                   51503
+screenshots\TC-03-01-unsupported-file-rejected.png         70990
+screenshots\TC-04-01-oversized-file-rejected.png           71678
+screenshots\TC-05-01-required-field-validation.png         77160
+screenshots\TC-07-01-synthetic-application-fixture.png     42458
+screenshots\TC-07-02-recommendation-result.png             89996
+screenshots\TC-08-01-weighted-score-verification.png      136343
+screenshots\TC-09-01-missing-job-profile-error.png         79859
+screenshots\TC-10-01-shortlist-action-saved.png            88842
+screenshots\TC-10-02-shortlist-persisted.png               54632
+screenshots\TC-10-03-shortlist-database-status.png        137003
+screenshots\TC-11-01-reject-action-saved.png               88263
+screenshots\TC-11-02-reject-persisted.png                  77939
+screenshots\TC-11-03-reject-database-status.png           120260
+TEST-RESULTS.md                                             4235
+
+
+

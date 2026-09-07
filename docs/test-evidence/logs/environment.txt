@@ -1,0 +1,5 @@
+Test date: 2026-09-07 00:14:42 +06:00
+Branch: feature/ai-1.7-recruiter-decision-workflow
+Commit: cd88b7b2c82466319f226dc9cd3a8291855042f6
+Node: v24.18.0
+npm: 11.16.0

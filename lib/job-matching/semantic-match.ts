@@ -70,13 +70,15 @@ export async function findSemanticCandidates(
 
 
             })
-            .filter(Boolean);
+            .filter(
+                item => item !== null,
+            );
 
 
 
     return results
         .sort(
-            (a: any, b: any) =>
+            (a, b) =>
                 b.similarity -
                 a.similarity,
         );
